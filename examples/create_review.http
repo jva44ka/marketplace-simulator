@@ -1,0 +1,9 @@
+### Send POST request with json body
+POST http://localhost:8000/products/100/reviews
+Content-Type: application/json
+
+{
+  "sku": 1076963,
+  "comment": "good product",
+  "user_id": "35fe1358-a03a-4bba-b2aa-b0b1c49264d2"
+}
