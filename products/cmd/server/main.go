@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	app2 "gitlab.ozon.dev/16/students/week-1-workshop/internal/app"
 	"os"
+
+	app2 "github.com/jva44ka/ozon-simulator-go/internal/app"
 )
 
 func main() {

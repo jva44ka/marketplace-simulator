@@ -2,15 +2,15 @@ package app
 
 import (
 	"fmt"
-	"github.com/jva44ka/ozon-simulator-go/internal/app/handlers/create_review_handler"
+	"net"
+	"net/http"
+
 	"github.com/jva44ka/ozon-simulator-go/internal/app/handlers/get_product_by_sku_handler"
-	"github.com/jva44ka/ozon-simulator-go/internal/domain/reviews/repository"
-	"github.com/jva44ka/ozon-simulator-go/internal/domain/reviews/service"
+	"github.com/jva44ka/ozon-simulator-go/internal/domain/repository"
+	"github.com/jva44ka/ozon-simulator-go/internal/domain/service"
 	"github.com/jva44ka/ozon-simulator-go/internal/infra/config"
 	"github.com/jva44ka/ozon-simulator-go/internal/infra/http/middlewares"
 	"github.com/jva44ka/ozon-simulator-go/internal/infra/http/round_trippers"
-	"net"
-	"net/http"
 )
 
 type App struct {
@@ -48,20 +48,11 @@ func boostrapHandler(config *config.Config) http.Handler {
 	tr := http.DefaultTransport
 	tr = round_trippers.NewTimerRoundTipper(tr)
 
-	client := http.Client{Transport: tr}
-
-	productService := product_service.NewProductService(
-		client,
-		config.Products.Token,
-		fmt.Sprintf("%s://%s:%s", config.Products.Schema, config.Products.Host, config.Products.Port),
-	)
-
-	reviewRepository := repository.NewReviewRepository(100)
-	reviewService := service.NewReviewService(reviewRepository, productService)
+	productRepository := repository.NewProductRepository(100)
+	productService := service.NewProductService(productRepository)
 
 	mx := http.NewServeMux()
-	mx.Handle("POST /products/{sku}/reviews", create_review_handler.NewCreateReviewHandler(reviewService))
-	mx.Handle("GET /products/{sku}/reviews", get_product_by_sku_handler.NewGetReviewsBySkuHandler(reviewService))
+	mx.Handle("GET /products/{sku}", get_product_by_sku_handler.NewGetProductsBySkuHandler(productService))
 
 	middleware := middlewares.NewTimerMiddleware(mx)
 

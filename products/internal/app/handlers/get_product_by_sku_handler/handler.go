@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jva44ka/ozon-simulator-go/internal/domain/model"
-	http2 "github.com/jva44ka/ozon-simulator-go/pkg/http"
 	"net/http"
 	"strconv"
+
+	"github.com/jva44ka/ozon-simulator-go/internal/domain/model"
+	http2 "github.com/jva44ka/ozon-simulator-go/pkg/http"
 )
 
 type ProductService interface {
-	GetProductsBySku(ctx context.Context, sku uint64) ([]model.Product, error)
+	GetProductBySku(ctx context.Context, sku uint64) (*model.Product, error)
 }
 
 type GetProductsBySkuHandler struct {
@@ -45,7 +46,7 @@ func (h GetProductsBySkuHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	Products, err := h.ProductService.GetProductsBySku(r.Context(), sku)
+	Product, err := h.ProductService.GetProductBySku(r.Context(), uint64(sku))
 	if err != nil {
 		if err = http2.ErrorResponse(w, http.StatusInternalServerError, err.Error()); err != nil {
 
@@ -55,15 +56,12 @@ func (h GetProductsBySkuHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	response := GetProductsResponse{Products: make([]GetProductsProductResponse, 0, len(Products))}
-	for _, Product := range Products {
-		response.Products = append(response.Products, GetProductsProductResponse{
-			ID:      uint64(Product.ID),
-			Sku:     uint64(Product.Sku),
-			Comment: Product.Comment,
-			UserID:  Product.UserID.String(),
-		})
-	}
+	response := GetProductsResponse{
+		Product: GetProductProductResponse{
+			Sku:   Product.Sku,
+			Name:  Product.Name,
+			Price: Product.Price,
+		}}
 
 	w.Header().Add("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(&response); err != nil {
