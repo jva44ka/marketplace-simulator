@@ -17,8 +17,23 @@ type InMemoryProductRepository struct {
 }
 
 func NewProductRepository(cap int) *InMemoryProductRepository {
+	storage := make(map[uint64]model.Product, cap)
+
+	storage[1] = model.Product{
+		Sku:   1,
+		Price: 100.0,
+		Name:  "Крем для лица"}
+	storage[2] = model.Product{
+		Sku:   2,
+		Price: 600.0,
+		Name:  "Дворники для лады весты"}
+	storage[3] = model.Product{
+		Sku:   3,
+		Price: 600.0,
+		Name:  "Вареники из Ozon Fresh"}
+
 	return &InMemoryProductRepository{
-		storage: make(map[uint64]model.Product, cap),
+		storage: storage,
 	}
 }
 
