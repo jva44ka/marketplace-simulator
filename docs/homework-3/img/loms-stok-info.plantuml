@@ -1,0 +1,15 @@
+@startuml
+
+actor User as u
+collections LOMS as l
+database StocksStorage as ss
+
+u -> l : gRPC Loms.StocksInfo\n\t- sku
+activate l
+
+l -> ss : stocks.GetBySKU()
+
+l -> u : Response: OK (code_id=0)\n- count
+deactivate l
+
+@enduml

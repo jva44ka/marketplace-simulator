@@ -1,0 +1,514 @@
+########################## add
+
+### add valid comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": 42,
+  "sku": 1004005,
+  "comment": "hello world"
+}
+EOM
+### Expect:
+### {
+###  "id": "1001"
+### }
+
+
+### add invalid comment, miss user_id
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "sku": 1004005,
+  "comment": "hello world"
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentAddRequest.UserId: value must be greater than 0
+
+
+### add invalid comment, negative user_id
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": -42,
+  "sku": 1004005,
+  "comment": "hello world"
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentAddRequest.UserId: value must be greater than 0
+
+
+### add invalid comment, miss sku
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": 42,
+  "comment": "hello world"
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentAddRequest.Sku: value must be greater than 0
+
+
+### add invalid comment, negative sku
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": 42,
+  "sku": -10,
+  "comment": "hello world"
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentAddRequest.Sku: value must be greater than 0
+
+
+### add invalid comment, miss comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": 42,
+  "sku": 1004005
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentAddRequest.Comment: value length must be between 1 and 255 runes, inclusive
+
+
+### add invalid comment, empty comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": 42,
+  "sku": 1004005,
+  "comment": ""
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentAddRequest.Comment: value length must be between 1 and 255 runes, inclusive
+
+
+### add invalid comment, too large comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": 42,
+  "sku": 1004005,
+  "comment": "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456"
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentAddRequest.Comment: value length must be between 1 and 255 runes, inclusive
+
+
+
+
+
+########################## get by id
+
+### set precondition BEGIN ###
+### save comment_id from response
+
+### add valid comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{
+  "user_id": 123,
+  "sku": 456005,
+  "comment": "hello world 123"
+}
+EOM
+
+### Expect:
+### {
+###   "id": "9000"
+### }
+
+### set precondition END ###
+
+### get valid, previously created, comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentGetByID <<EOM
+{
+  "id": 9000
+}
+EOM
+
+### Expect:
+### {
+###   "id": "9000",
+###   "userId": "123",
+###   "sku": "456005",
+###   "comment": "hello world 123",
+###   "createdAt": "2025-01-13T17:20:52.777378Z"
+### }
+
+
+### get comment by invalid id (negative)
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentGetByID <<EOM
+{
+  "id": -8000
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentGetByIDRequest.Id: value must be greater than 0
+
+
+### get comment by id, which not exists
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentGetByID <<EOM
+{
+  "id": 404000
+}
+EOM
+
+### Expect:
+### ERROR:
+###   Code: NotFound
+###   Message: comment with id=404000 not found
+
+
+
+
+
+
+########################## edit
+
+### edit valid comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "comment_id": 1001,
+  "new_comment": "hello world changed"
+}
+EOM
+
+### Expect
+### {}
+
+
+### edit invalid comment, user is not an author
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 555555,
+  "comment_id": 1001,
+  "new_comment": "hello world changed"
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: PermissionDenied
+###   Message: unable to edit comment: given user is not an author of modified comment
+
+
+### edit invalid comment, comment is not exists
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "comment_id": 555551001,
+  "new_comment": "hello world changed"
+}
+EOM
+
+### Expect
+## ERROR:
+##   Code: NotFound
+##   Message: editing comment is not found
+
+
+### edit invalid comment, miss user_id
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "comment_id": 1001,
+  "new_comment": "hello world changed"
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentEditRequest.UserId: value must be greater than 0
+
+
+### edit invalid comment, negative user_id
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": -42,
+  "comment_id": 1001,
+  "new_comment": "hello world changed"
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentEditRequest.UserId: value must be greater than 0
+
+
+### edit invalid comment, miss comment_id
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "new_comment": "hello world changed"
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentEditRequest.CommentId: value must be greater than 0
+
+
+### edit invalid comment, negative comment_id
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "comment_id": -1001,
+  "new_comment": "hello world changed"
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentEditRequest.CommentId: value must be greater than 0
+
+
+### edit invalid comment, miss new_comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "comment_id": 1001
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentEditRequest.NewComment: value length must be between 1 and 255 runes, inclusive
+
+
+### edit invalid comment, empty new_comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "comment_id": 1001,
+  "new_comment": ""
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentEditRequest.NewComment: value length must be between 1 and 255 runes, inclusive
+
+
+### edit invalid comment, too long new_comment
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "comment_id": 1001,
+  "new_comment": "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456"
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentEditRequest.NewComment: value length must be between 1 and 255 runes, inclusive
+
+
+### edit valid comment, but editable time expired (CHANGE EditInterval!!!)
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentEdit <<EOM
+{
+  "user_id": 42,
+  "comment_id": 1001,
+  "new_comment": "hello world changed 3"
+}
+EOM
+
+### Expect
+### ERROR:
+###   Code: FailedPrecondition
+###   Message: unable to edit comment: editing time interval expired
+
+
+
+
+
+########################## list by sku
+
+### set precondition BEGIN ###
+
+### add valid comment 1
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{"user_id": 71, "sku": 123, "comment": "hello world 1"}
+EOM
+
+### add valid comment 2
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{"user_id": 71, "sku": 123, "comment": "hello world 2"}
+EOM
+
+### add valid comment 3
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{"user_id": 71, "sku": 123, "comment": "hello world 3"}
+EOM
+
+### set precondition END ###
+
+### list comments by sku
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentListBySKU <<EOM
+{"sku": 123}
+EOM
+
+### Expected (order created_at DESC, IMPORTANT!!!):
+### {
+###   "comments": [
+###     {
+###       "id": "21001",
+###       "userId": "71",
+###       "comment": "hello world 3",
+###       "createdAt": "2024-12-24T23:13:26.519278Z"
+###     },
+###     {
+###       "id": "20001",
+###       "userId": "71",
+###       "comment": "hello world 2",
+###       "createdAt": "2024-12-24T23:13:23.754865Z"
+###     },
+###     {
+###       "id": "19001",
+###       "userId": "71",
+###       "comment": "hello world 1",
+###       "createdAt": "2024-12-24T23:13:19.292258Z"
+###     }
+###   ]
+### }
+
+
+### list comments by sku, sku have no comments yet
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentListBySKU <<EOM
+{"sku": 444444}
+EOM
+
+### Expected:
+### {
+###   "comments": []
+### }
+
+
+### list comments by sku, invalid, miss sku
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentListBySKU <<EOM
+{}
+EOM
+
+### Expected:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentListBySKURequest.Sku: value must be greater than 0
+
+
+### list comments by sku, invalid, negative sku
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentListBySKU <<EOM
+{
+  "sku": -1234
+}
+EOM
+
+### Expected:
+### ERROR:
+###   Code: InvalidArgument
+###   Message: invalid CommentListBySKURequest.Sku: value must be greater than 0
+
+
+
+
+
+########################## list by user
+### set precondition BEGIN ###
+
+### add valid comment 1
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{"user_id": 54, "sku": 789, "comment": "comment #1 54-789 (shard-2)"}
+EOM
+
+### add valid comment 1
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{"user_id": 54, "sku": 456, "comment": "comment #1 54-456 (shard-1)"}
+EOM
+
+### add valid comment 2
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{"user_id": 54, "sku": 220, "comment": "comment #2 54-220 (shard-1)"}
+EOM
+
+### add valid comment 3
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentAdd <<EOM
+{"user_id": 54, "sku": 567, "comment": "comment #2 54-567 (shard-2)"}
+EOM
+
+### set precondition END ###
+
+
+### list comments by user
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentListByUser <<EOM
+{"user_id": 54}
+EOM
+
+### Expected (order by created_at DESC, IMPORTANT!!!):
+### {
+###     {
+###       "id": "23001",
+###       "sku": "567",
+###       "comment": "comment #2 54-567 (shard-2)",
+###       "createdAt": "2024-12-24T23:16:58.500932Z"
+###     },
+###     {
+###       "id": "7000",
+###       "sku": "220",
+###       "comment": "comment #2 54-220 (shard-1)",
+###       "createdAt": "2024-12-24T23:16:55.329140Z"
+###     },
+###     {
+###       "id": "6000",
+###       "sku": "456",
+###       "comment": "comment #1 54-456 (shard-1)",
+###       "createdAt": "2024-12-24T23:16:52.341171Z"
+###     },
+###   "comments": [
+###     {
+###       "id": "22001",
+###       "sku": "789",
+###       "comment": "comment #1 54-789 (shard-2)",
+###       "createdAt": "2024-12-24T23:16:49.163450Z"
+###     }
+###   ]
+### }
+
+
+### list comments by user, no comments for user
+grpcurl -plaintext -d @ localhost:8085 comments.Comments.CommentListByUser <<EOM
+{"user_id": 32423423}
+EOM
+
+### Expected:
+### {
+###   "comments": []
+### }

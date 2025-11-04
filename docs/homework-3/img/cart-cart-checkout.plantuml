@@ -1,0 +1,18 @@
+@startuml
+
+actor User as u
+collections Cart as c
+database CartStorage as cs
+collections Order as o
+
+u -> c : POST /checkout/<user_id>
+activate c
+c -> cs : cart.GetItemsByUserID
+c -> o : gRPC Loms.OrderCreate\n\t- user\n\t- []item
+c -> cs : cart.DeleteItemsByUserID
+
+c -> u : Response: 200 OK
+
+deactivate c
+
+@enduml

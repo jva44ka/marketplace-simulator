@@ -1,0 +1,207 @@
+### create normal order
+POST http://localhost:8084/order/create
+Content-Type: application/json
+
+{
+  "user": 31337,
+  "items": [
+    {
+      "sku": 4487693,
+      "count": 3
+    },
+    {
+      "sku": 4669069,
+      "count": 2
+    }
+  ]
+}
+### expected {"orderID":1}
+
+
+### get info, assert status="awaiting payment"
+POST http://localhost:8084/order/info
+Content-Type: application/json
+
+{
+  "orderID": 2
+}
+### expected {"status":"awaiting payment","user":31337,"Items":[{"sku":4487693,"count":3},{"sku":4669069,"count":2}]}
+
+
+### pay order
+POST http://localhost:8084/order/pay
+Content-Type: application/json
+
+{
+  "orderID": 2
+}
+### expected {}
+
+
+### check actual status is "payed"
+POST http://localhost:8084/order/info
+Content-Type: application/json
+
+{
+  "orderID": 4
+}
+### expected {"status":"payed","user":31337,"Items":[{"sku":4487693,"count":3},{"sku":4669069,"count":2}]}
+
+
+### unable to cancel payed order
+POST http://localhost:8084/order/cancel
+Content-Type: application/json
+
+{
+  "orderID": 4
+}
+### expected order/cancel: command handler failed: unexpected order status, actual="payed": order wrong status; 412 (Precondition Failed)
+
+
+### get unknown order
+POST http://localhost:8084/order/info
+Content-Type: application/json
+
+{
+  "orderID": 404
+}
+### expected order/info: command handler failed: order not found; 404 (Not Found)
+
+
+### cancel order not exists
+POST http://localhost:8084/order/cancel
+Content-Type: application/json
+
+{
+  "orderID": 404
+}
+### expected order/cancel: command handler failed: order not found; 404 (Not Found)
+
+
+### create order stocks not enought
+POST http://localhost:8084/order/create
+Content-Type: application/json
+
+{
+  "user": 31337,
+  "items": [
+    {
+      "sku": 404,
+      "count": 3
+    }
+  ]
+}
+### expected: order/create: command handler failed: stock not enough; 412 (Precondition Failed)
+
+
+### check order status is failed
+POST http://localhost:8084/order/info
+Content-Type: application/json
+
+{
+  "orderId": 1
+}
+### expected: {"status":"failed","user":31337,"Items":[{"sku":404,"count":3}]}
+
+### cancel failed order
+POST http://localhost:8084/order/cancel
+Content-Type: application/json
+
+{
+  "orderId": 3
+}
+### expected order/cancel: command handler failed: unexpected order status, actual="failed": order wrong status; 412 (Precondition Failed)
+
+
+### stock info for normal sku
+POST http://localhost:8084/stock/info
+Content-Type: application/json
+
+{
+  "sku": 2958025
+}
+### expected {"count":1000}
+
+
+### stock info for unknown sku
+POST http://localhost:8084/stock/info
+Content-Type: application/json
+
+{
+  "sku": 404
+}
+### expected {}; 200 OK
+
+
+### reserve 500 count of the stock
+POST http://localhost:8084/order/create
+Content-Type: application/json
+
+{
+  "user": 31337,
+  "items": [
+    {
+      "sku": 2958025,
+      "count": 500
+    }
+  ]
+}
+### expected: {"orderID":3}
+
+
+### check actual stocks
+POST http://localhost:8084/stock/info
+Content-Type: application/json
+
+{
+  "sku": 2958025
+}
+### expected {"count":500}; 200 OK
+
+
+### cancel order
+POST http://localhost:8084/order/cancel
+Content-Type: application/json
+
+{
+  "orderID": 3
+}
+### expected 200 OK
+
+
+### check canceled order status
+POST http://localhost:8084/order/info
+Content-Type: application/json
+
+{
+  "orderID": 3
+}
+### expected {"status":"cancelled","user":31337,"Items":[{"sku":2958025,"count":500}]}
+
+
+### check stocks returns
+POST http://localhost:8084/stock/info
+Content-Type: application/json
+
+{
+  "sku": 2958025
+}
+### expected {"count":1000}; 200 OK
+
+
+POST http://localhost:8082/cart/list
+Content-Type: application/json
+
+//{
+//  "user": 3
+//}
+
+###
+POST http://localhost:8082/cart/item/add
+Content-Type: application/json
+
+{
+  "user": 3,
+  "sku": 2202,
+  "count": 2
+}

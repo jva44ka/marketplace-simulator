@@ -1,0 +1,22 @@
+@startuml
+
+actor User as u
+collections Comment as c
+database "DB shard N" as db
+
+
+u -> c : gRPC Comment.CommentListByUser(\n\t- user_id\n)
+activate c
+c -> c : validateAll()
+
+loop over all shards
+  c -> db : comments[] += commentRepo.ListByUser(user_id)
+end
+
+c -> c : SortResults(comments)
+
+c -> u : Response: OK comments: [\n\t- id\n\t- sku\n\t- comment\n\t- created_at\n]
+
+deactivate c
+
+@enduml

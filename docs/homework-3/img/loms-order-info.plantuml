@@ -1,0 +1,19 @@
+@startuml
+
+actor User as u
+collections LOMS as l
+database OrdersStorage as os
+
+u -> l : gRPC Loms.OrderInfo\n\t- orderID int64
+activate l
+
+l -> os : order.GetByID()
+alt order exists
+  l -> u : Response: OK (code_id=0)\n\t- status\n\t- user\n\t- []items{}
+else
+  l -> u : Response: Not Found (code_id=5)
+end
+
+deactivate l
+
+@enduml

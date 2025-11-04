@@ -1,0 +1,24 @@
+@startuml
+
+actor User as u
+collections Comment as c
+database DB as db
+
+
+u -> c : gRPC Comment.CommentGetByID(\n\t- id\n)
+activate c
+c -> c : validateAll()
+c -> db : comment, err := commentRepo.GetByID(query.CommentID)
+alt is error
+  c -> u : Response: Internal
+else
+  alt comment not exists
+    c -> u : Response: Not Found
+  else
+    c -> u : Response: OK\n\t- id\n\t- user_id\n\t- sku\n\t- comment \n\t- created_at
+  end
+end
+
+deactivate c
+
+@enduml

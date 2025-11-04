@@ -1,6 +1,6 @@
-up:
-	docker-compose up reviews
-	docker-compose up products
+include make/lint.mk
+include make/build.mk
 
-run:
-	go run ./cmd/server/main.go
+lint: cart-lint loms-lint notifier-lint comments-lint
+
+build: cart-build loms-build notifier-build comments-build

@@ -1,0 +1,22 @@
+@startuml
+
+actor User as u
+collections LOMS as l
+database OrdersStorage as os
+database StocksStorage as ss
+
+u -> l : gRPC Loms.OrderCreate\n\t- user\n\t- items: []item{\n\t\t- sku\n\t\t- count\n\t  }
+activate l
+l -> os : order.Create()\n\tstatus=new
+l -> ss : stocks.Reserve()
+
+alt Reserve success
+  l -> os : order.SetStatus(awaiting_payment)
+  l -> u : Response: OK (code_id=0)\n\t- orderID
+else
+  l -> os : order.SetStatus(failed)
+  l -> u : Failed Precondition (code_id 9)
+end
+deactivate l
+
+@enduml

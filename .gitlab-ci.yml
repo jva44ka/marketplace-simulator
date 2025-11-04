@@ -1,0 +1,4 @@
+include:
+  - project: 'hrit/route256/classroom-16/go/base'
+    ref: master
+    file: '.gitlab-ci.yml'

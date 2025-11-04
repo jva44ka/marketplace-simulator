@@ -1,0 +1,17 @@
+@startuml
+
+actor User as u
+collections Comment as c
+database DB as db
+
+
+u -> c : gRPC Comment.CommentAdd(\n\t- user_id\n\t- sku\n\t- comment\n)
+activate c
+c -> c : validateAll()
+c -> db : commentRepo.Add(domain.Comment)
+
+c -> u : Response: OK\n\t- id
+
+deactivate c
+
+@enduml

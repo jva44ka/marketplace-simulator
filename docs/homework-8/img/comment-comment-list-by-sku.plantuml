@@ -1,0 +1,17 @@
+@startuml
+
+actor User as u
+collections Comment as c
+database DB as db
+
+
+u -> c : gRPC Comment.CommentListBySKU(\n\t- sku\n)
+activate c
+c -> c : validateAll()
+c -> db : commentRepo.ListBySKU(sku)
+
+c -> u : Response: OK comments: [\n\t- id\n\t- user_id\n\t- comment\n\t- created_at\n]
+
+deactivate c
+
+@enduml

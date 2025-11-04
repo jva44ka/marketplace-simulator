@@ -1,0 +1,20 @@
+@startuml
+
+actor User as u
+collections Comment as c
+database DB as db
+
+
+u -> c : gRPC Comment.CommentEdit(\n\t- user_id\n\t- comment_id\n\t- new_comment\n)
+activate c
+c -> c : validateAll()
+c -> db : oldComment := commentRepo.GetByID()
+c -> c : validateSameUser(req.UserID, oldComment.UserID)
+c -> c : validateEditTimeout(time.Now(), oldComment.CreateAt)
+c -> db : commentRepo.Edit(oldComment.ID, newComment)
+
+c -> u : Response: OK
+
+deactivate c
+
+@enduml

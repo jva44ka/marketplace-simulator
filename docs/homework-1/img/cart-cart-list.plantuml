@@ -1,0 +1,25 @@
+@startuml
+
+actor User as u
+collections Cart as c
+database CartStorage as cs
+collections ProductService as p
+
+u -> c : GET /user/<user_id>/cart
+activate c
+c -> cs : cart.GetItemsByUserID
+alt cart exists
+  loop for each item in cart
+    c -> p : GET /product/<sku>
+    activate p
+    p -> c : Response: 200 OK\n\t- name\n\t- price\n\t- sku
+    deactivate p
+    c -> c : calculate total price
+  end
+  c -> u : Response: 200 OK\n\t- []item\n\t- total_price
+else
+  c -> u : Response: 404 Not Found
+end
+deactivate c
+
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+
+actor User as u
+collections Cart as c
+database CartStorage as cs
+collections ProductService as p
+collections Order as o
+
+u -> c : POST /user/<user_id>/cart/<sku_id>\n\t- count
+activate c
+loop for each item in request
+  c -> p : /get_product\n\t- sku\n\t- token
+  activate p
+    p -> c : \nResponse:\n\t- name\n\t- price
+  deactivate p
+  c -> c : validate product exists
+end
+c -> u : 200 OK
+deactivate c
+
+@enduml

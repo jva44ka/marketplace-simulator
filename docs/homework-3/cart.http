@@ -1,0 +1,81 @@
+### check cart state, expect empty cart
+GET http://localhost:8080/user/31337/cart
+Content-Type: application/json
+
+### expected {}
+
+
+### add item to cart, see awailable stocks in loms migrations
+POST http://localhost:8080/user/31337/cart/1076963
+Content-Type: application/json
+
+{
+  "count": 1
+}
+### expected 200 OK
+
+
+### check cart state, expect single sku in cart
+GET http://localhost:8080/user/31337/cart
+
+### expected {"items":[{"sku":1076963,"count":1,"name":"Теория нравственных чувств | Смит Адам","price":3379}],"totalPrice":3379}
+
+#########################
+### checkout cart
+POST http://localhost:8080/checkout/31337
+Content-Type: application/json
+#Authorization: testtoken
+#X-Product-Service-Token: testtoken
+
+### expected {"orderID":1000}
+
+
+### check orderID in LOMS
+GET http://localhost:8084/order/info?orderId=1000
+Content-Type: application/json
+### expected {"status":"awaiting payment","user":31337,"Items":[{"sku":4465995,"count":1}]}
+
+
+### check cart, expect empty
+GET http://localhost:8080/user/31337/cart
+Content-Type: application/json
+Authorization: testtoken
+
+
+### expected {}
+
+
+### check cart, expect empty
+GET http://localhost:8080/user/31337/cart
+Content-Type: application/json
+Authorization: testtoken
+
+
+
+### add unknown item, expect error
+POST http://localhost:8080/user/31337/cart/404
+Content-Type: application/json
+Authorization: testtoken
+
+{
+  "count": 1
+}
+### expected cart/item/add: command handler failed: productService.GetProductInfo return no product with given SKU=404: invalid sku; 412 Precondition Failed
+
+
+### add item out of stock, expect error
+POST http://localhost:8080/user/31337/cart/1148162
+Content-Type: application/json
+Authorization: testtoken
+
+{
+  "count": 10000
+}
+### expected 200 OK
+
+
+### checkout empty cart, expect error
+POST http://localhost:8080/checkout/31337
+Content-Type: application/json
+
+### expected cart/item/add: lomsClient.OrderCreate failed: invalid stock; 412 Precondition Failed
