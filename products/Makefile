@@ -1,8 +1,5 @@
-BINDIR=${CURDIR}/bin
-PACKAGE=products
+up:
+	docker-compose up products
 
-bindir:
-	mkdir -p ${BINDIR}
-
-build: bindir
-	echo "build products"
+run:
+	go run ./cmd/server/main.go
