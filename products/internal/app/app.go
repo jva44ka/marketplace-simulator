@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/jva44ka/ozon-simulator-go/internal/app/handlers/create_review_handler"
-	"github.com/jva44ka/ozon-simulator-go/internal/app/handlers/get_reviews_by_sku_handler"
+	"github.com/jva44ka/ozon-simulator-go/internal/app/handlers/get_product_by_sku_handler"
 	"github.com/jva44ka/ozon-simulator-go/internal/domain/reviews/repository"
 	"github.com/jva44ka/ozon-simulator-go/internal/domain/reviews/service"
 	"github.com/jva44ka/ozon-simulator-go/internal/infra/config"
@@ -61,7 +61,7 @@ func boostrapHandler(config *config.Config) http.Handler {
 
 	mx := http.NewServeMux()
 	mx.Handle("POST /products/{sku}/reviews", create_review_handler.NewCreateReviewHandler(reviewService))
-	mx.Handle("GET /products/{sku}/reviews", get_reviews_by_sku_handler.NewGetReviewsBySkuHandler(reviewService))
+	mx.Handle("GET /products/{sku}/reviews", get_product_by_sku_handler.NewGetReviewsBySkuHandler(reviewService))
 
 	middleware := middlewares.NewTimerMiddleware(mx)
 

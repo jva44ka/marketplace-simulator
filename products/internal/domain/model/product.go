@@ -1,9 +1,7 @@
 package model
 
-type Sku uint64
-
 type Product struct {
-	Sku   Sku
+	Sku   uint64
 	Price float64
 	Name  string
 }
