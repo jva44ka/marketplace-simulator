@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/jva44ka/ozon-simulator-go/internal/domain/model"
-	http2 "github.com/jva44ka/ozon-simulator-go/pkg/http"
+	httpPkg "github.com/jva44ka/ozon-simulator-go/pkg/http"
 )
 
 type ProductService interface {
@@ -27,7 +27,7 @@ func (h GetProductsBySkuHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	skuRaw := r.PathValue("sku")
 	sku, err := strconv.Atoi(skuRaw)
 	if err != nil {
-		if err = http2.ErrorResponse(w, http.StatusBadRequest, "sku must be more than zero"); err != nil {
+		if err = httpPkg.ErrorResponse(w, http.StatusBadRequest, "sku must be more than zero"); err != nil {
 			fmt.Println("json.Encode failed ", err)
 
 			return
@@ -37,7 +37,7 @@ func (h GetProductsBySkuHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	if sku < 1 {
-		if err = http2.ErrorResponse(w, http.StatusBadRequest, "sku must be more than zero"); err != nil {
+		if err = httpPkg.ErrorResponse(w, http.StatusBadRequest, "sku must be more than zero"); err != nil {
 			fmt.Println("json.Encode failed ", err)
 
 			return
@@ -48,7 +48,7 @@ func (h GetProductsBySkuHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	Product, err := h.ProductService.GetProductBySku(r.Context(), uint64(sku))
 	if err != nil {
-		if err = http2.ErrorResponse(w, http.StatusInternalServerError, err.Error()); err != nil {
+		if err = httpPkg.ErrorResponse(w, http.StatusInternalServerError, err.Error()); err != nil {
 
 			return
 		}

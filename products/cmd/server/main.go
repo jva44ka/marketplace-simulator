@@ -1,3 +1,4 @@
+//go:generate swag init -g ./main.go -o ./docs
 package main
 
 import (

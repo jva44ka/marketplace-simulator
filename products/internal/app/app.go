@@ -11,6 +11,7 @@ import (
 	"github.com/jva44ka/ozon-simulator-go/internal/infra/config"
 	"github.com/jva44ka/ozon-simulator-go/internal/infra/http/middlewares"
 	"github.com/jva44ka/ozon-simulator-go/internal/infra/http/round_trippers"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type App struct {
@@ -53,6 +54,7 @@ func boostrapHandler(config *config.Config) http.Handler {
 
 	mx := http.NewServeMux()
 	mx.Handle("GET /products/{sku}", get_product_by_sku_handler.NewGetProductsBySkuHandler(productService))
+	mx.Handle("GET /swagger/*", httpSwagger.WrapHandler)
 
 	middleware := middlewares.NewTimerMiddleware(mx)
 

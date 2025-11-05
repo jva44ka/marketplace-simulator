@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 
@@ -44,7 +43,7 @@ func (r *InMemoryProductRepository) GetProductBySku(_ context.Context, sku uint6
 	product, productExists := r.storage[sku]
 
 	if productExists == false {
-		return nil, errors.New("Product not found in storage")
+		return nil, nil
 	}
 
 	return &product, nil
