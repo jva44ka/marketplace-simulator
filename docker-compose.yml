@@ -1,0 +1,80 @@
+services:
+  products:
+    image: jva44ka/ozon-simulator-go-products:latest
+    container_name: products
+    ports:
+      - "5001:5000"
+    environment:
+      CONFIG_PATH: /app/configs/products.yaml
+    volumes:
+      - ./configs/products.yaml:/app/configs/products.yaml:ro
+    depends_on:
+      - products-db
+
+  cart:
+    image: jva44ka/ozon-simulator-go-cart:latest
+    container_name: cart
+    ports:
+      - "5002:5000"
+    environment:
+      CONFIG_PATH: /app/configs/cart.yaml
+    volumes:
+      - ./configs/cart.yaml:/app/configs/cart.yaml:ro
+    depends_on:
+      - cart-db
+
+  products-db:
+    image: postgres:17.7
+    container_name: products-db
+    environment:
+      POSTGRES_DB: ozon-simulator-go-products
+      POSTGRES_USER: products
+      POSTGRES_PASSWORD: products
+    ports:
+      - "5433:5432"
+    volumes:
+      - products-db-data:/var/lib/postgresql/data
+
+  products-migrations:
+    image: golang:1.23-alpine
+    container_name: products-migrations
+    depends_on:
+      - products-db
+    volumes:
+      - ./migrations/products:/migrations
+    command: >
+      sh -c "
+      go install github.com/pressly/goose/v3/cmd/goose@v3.24.1 &&
+      goose -dir /migrations postgres
+      'postgres://products:products@products-db:5432/ozon-simulator-go-products?sslmode=disable' up
+      "  
+
+  cart-db:
+    image: postgres:17.7
+    container_name: cart-db
+    environment:
+      POSTGRES_DB: ozon-simulator-go-cart
+      POSTGRES_USER: cart
+      POSTGRES_PASSWORD: cart
+    ports:
+      - "5434:5432"
+    volumes:
+      - cart-db-data:/var/lib/postgresql/data
+
+  cart-migrations:
+    image: golang:1.23-alpine
+    container_name: cart-migrations
+    depends_on:
+      - cart-db
+    volumes:
+      - ./migrations/cart:/migrations
+    command: >
+      sh -c "
+      go install github.com/pressly/goose/v3/cmd/goose@v3.24.1 &&
+      goose -dir /migrations postgres
+      'postgres://cart:cart@cart-db:5432/ozon-simulator-go-cart?sslmode=disable' up
+      "
+
+volumes:
+  products-db-data:
+  cart-db-data:

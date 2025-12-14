@@ -1,0 +1,16 @@
+server:
+  host: 
+  port: 5000
+
+products:
+  schema: http
+  host: products
+  port: 5000
+  token: testToken
+
+database:
+  user: cart
+  password: cart
+  host: cart-db
+  port: 5432
+  name: ozon-simulator-go-cart

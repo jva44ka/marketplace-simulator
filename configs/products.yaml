@@ -1,0 +1,10 @@
+server:
+  host:
+  port: 5000
+
+database:
+  user: products
+  password: products
+  host: products-db
+  port: 5432
+  name: ozon-simulator-go-products
