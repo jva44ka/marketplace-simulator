@@ -11,7 +11,7 @@ database:
   password: products
   host: products-db
   port: 5432
-  name: ozon_simulator_go_products
+  name: ozon-simulator-go-products
 
 authorization:
   enabled: true

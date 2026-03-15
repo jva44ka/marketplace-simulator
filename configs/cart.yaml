@@ -5,8 +5,9 @@ server:
 products:
   schema: http
   host: products
-  port: 5000
-  token: testToken
+  port: 8002
+  auth-token: admin
+  timeout: 30s
 
 database:
   user: cart
