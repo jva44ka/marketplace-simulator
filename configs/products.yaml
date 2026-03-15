@@ -1,10 +1,18 @@
-server:
+http-server:
   host:
   port: 5000
+
+grpc-server:
+  host: localhost
+  port: 8002
 
 database:
   user: products
   password: products
   host: products-db
   port: 5432
-  name: ozon-simulator-go-products
+  name: ozon_simulator_go_products
+
+authorization:
+  enabled: true
+  admin-user: admin
