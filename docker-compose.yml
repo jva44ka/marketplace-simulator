@@ -36,18 +36,11 @@ services:
       - products-db-data:/var/lib/postgresql/data
 
   products-migrations:
-    image: golang:1.23-alpine
+    image: jva44ka/ozon-simulator-go-products:migrator
     container_name: products-migrations
     depends_on:
       - products-db
-    volumes:
-      - ./migrations/products:/migrations
-    command: >
-      sh -c "
-      go install github.com/pressly/goose/v3/cmd/goose@v3.24.1 &&
-      goose -dir /migrations postgres
-      'postgres://products:products@products-db:5432/ozon-simulator-go-products?sslmode=disable' up
-      "  
+    command: "postgres://products:products@products-db:5432/ozon-simulator-go-products?sslmode=disable up"
 
   cart-db:
     image: postgres:17.7
@@ -62,18 +55,11 @@ services:
       - cart-db-data:/var/lib/postgresql/data
 
   cart-migrations:
-    image: golang:1.23-alpine
+    image: jva44ka/ozon-simulator-go-cart:migrator
     container_name: cart-migrations
     depends_on:
       - cart-db
-    volumes:
-      - ./migrations/cart:/migrations
-    command: >
-      sh -c "
-      go install github.com/pressly/goose/v3/cmd/goose@v3.24.1 &&
-      goose -dir /migrations postgres
-      'postgres://cart:cart@cart-db:5432/ozon-simulator-go-cart?sslmode=disable' up
-      "
+    command: "postgres://cart:cart@cart-db:5432/ozon-simulator-go-cart?sslmode=disable up"
 
   prometheus:
     image: prom/prometheus:latest
