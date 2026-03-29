@@ -40,6 +40,18 @@ services:
       - cart-db
       - kafka
 
+  cart-consumer:
+    image: jva44ka/ozon-simulator-go-cart:latest
+    container_name: cart-consumer
+    entrypoint: ["/app/consumer"]
+    environment:
+      CONFIG_PATH: /app/configs/cart.yaml
+    volumes:
+      - ./configs/cart.yaml:/app/configs/cart.yaml:ro
+    depends_on:
+      - cart-db
+      - kafka
+
   products-db:
     image: postgres:17.7
     container_name: products-db
