@@ -12,10 +12,12 @@
 | **cart**              | [ozon-simulator-go-cart](https://github.com/jva44ka/ozon-simulator-go-cart)         | Корзина покупок (REST, PostgreSQL)              |
 | **products-db**       | postgres:17.7                      | БД сервиса товаров                              |
 | **cart-db**           | postgres:17.7                      | БД сервиса корзины                              |
+| **cart-consumer**     | из [ozon-simulator-go-cart](https://github.com/jva44ka/ozon-simulator-go-cart)     | Kafka-консьюмер событий истечения резервирований |
 | **products-migrations** | migrator из [products](https://github.com/jva44ka/ozon-simulator-go-products)    | Накатывает миграции в products-db при старте    |
 | **cart-migrations**   | migrator из [cart](https://github.com/jva44ka/ozon-simulator-go-cart)              | Накатывает миграции в cart-db при старте        |
+| **kafka**             | confluentinc/cp-kafka:7.9.0        | Брокер сообщений (события истечения резервирований) |
 | **prometheus**        | prom/prometheus                    | Сбор метрик с обоих сервисов                    |
-| **grafana**           | grafana/grafana                    | Дашборды для visualize метрик                   |
+| **grafana**           | grafana/grafana                    | Дашборды для визуализации метрик                |
 
 ## Быстрый старт
 
@@ -33,6 +35,7 @@ docker-compose up
 | [cart](https://github.com/jva44ka/ozon-simulator-go-cart)         | 5002 | HTTP REST                  |
 | products-db| 5433      | PostgreSQL                 |
 | cart-db    | 5434      | PostgreSQL                 |
+| kafka      | 9092      | Kafka broker               |
 | prometheus | 9090      | Prometheus UI              |
 | grafana    | 3000      | Grafana (admin / admin)    |
 
@@ -60,23 +63,23 @@ Grafana: [http://localhost:3000](http://localhost:3000) — логин `admin`, 
 ## Архитектура взаимодействия сервисов
 
 ```
-           HTTP REST
+              HTTP REST
   Client ──────────────► cart :5002
-                           │
-                           │ gRPC (внутренняя сеть Docker)
-                           ▼
-                      products :8002
-                           │
-                           │ SQL
-                           ▼
-                      products-db :5432
-  cart ──────────────► cart-db :5432
+                          │       │
+       gRPC (Docker net.) │       │ SQL
+                          ▼       ▼
+                     products    cart-db
+                     :8002       :5432
+                          │
+                          │ SQL
+                          ▼
+                     products-db :5432
 ```
 
 При оформлении заказа (`POST /user/{user_id}/cart/checkout`) сервис [cart](https://github.com/jva44ka/ozon-simulator-go-cart):
-1. Запрашивает данные товаров из `products` по gRPC
-2. Вызывает `DecreaseProductCount` для списания со склада
-3. Очищает корзину пользователя
+1. Вызывает `ReserveProduct` для резервирования каждого товара из корзины
+2. Очищает корзину пользователя
+3. Асинхронно вызывает `ConfirmReservation` для списания товаров со склада
 
 ## Документация сервисов
 
