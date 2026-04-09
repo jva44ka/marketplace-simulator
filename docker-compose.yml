@@ -5,14 +5,49 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://kafka:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qg
     ports:
       - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.9.0
+    container_name: kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic product.events --partitions 1 --replication-factor 1
+      echo 'Topics created:'
+      kafka-topics --bootstrap-server kafka:9092 --list
+      "
+    restart: "no"
 
   products:
     image: jva44ka/ozon-simulator-go-products:latest
@@ -24,8 +59,10 @@ services:
     volumes:
       - ./configs/products.yaml:/app/configs/products.yaml:ro
     depends_on:
-      - products-db
-      - kafka
+      products-db:
+        condition: service_started
+      kafka:
+        condition: service_healthy
 
   cart:
     image: jva44ka/ozon-simulator-go-cart:latest
@@ -37,20 +74,10 @@ services:
     volumes:
       - ./configs/cart.yaml:/app/configs/cart.yaml:ro
     depends_on:
-      - cart-db
-      - kafka
-
-  cart-consumer:
-    image: jva44ka/ozon-simulator-go-cart:latest
-    container_name: cart-consumer
-    entrypoint: ["/app/consumer"]
-    environment:
-      CONFIG_PATH: /app/configs/cart.yaml
-    volumes:
-      - ./configs/cart.yaml:/app/configs/cart.yaml:ro
-    depends_on:
-      - cart-db
-      - kafka
+      cart-db:
+        condition: service_started
+      kafka:
+        condition: service_healthy
 
   products-db:
     image: postgres:17.7

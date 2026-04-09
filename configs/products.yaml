@@ -17,11 +17,22 @@ authorization:
   enabled: true
   admin-user: admin
 
+logging:
+  log-request-body: true
+  log-response-body: true
+
 kafka:
   brokers:
     - kafka:9092
-  reservation-expired-topic: reservation-expired
+  product-events-topic: product.events
 
-reservation:
-  ttl: 24h
-  job-interval: 10m
+jobs:
+  reservation-expiry:
+    enabled: true
+    ttl: 24h
+    job-interval: 10m
+  product-events-outbox:
+    enabled: true
+    job-interval: 1s
+    batch-size: 100
+    max-retries: 5

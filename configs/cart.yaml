@@ -24,5 +24,5 @@ kafka:
   brokers:
     - kafka:9092
   topics:
-    - name: reservation-expired-topic
+    - name: product.events
       consumer-group: cart-reservation-consumer
