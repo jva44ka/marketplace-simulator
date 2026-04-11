@@ -15,6 +15,8 @@ services:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qg
     ports:
       - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
@@ -129,3 +131,4 @@ volumes:
   products-db-data:
   cart-db-data:
   grafana-data:
+  kafka-data:
