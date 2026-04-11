@@ -16,13 +16,3 @@ database:
   port: 5432
   name: ozon-simulator-go-cart
 
-jobs:
-  reservation-expired-consumer:
-    enabled: true
-
-kafka:
-  brokers:
-    - kafka:9092
-  topics:
-    - name: product.events
-      consumer-group: cart-reservation-consumer

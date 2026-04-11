@@ -34,21 +34,6 @@ services:
       kafka:
         condition: service_healthy
 
-  kafka-init:
-    image: confluentinc/cp-kafka:7.9.0
-    container_name: kafka-init
-    depends_on:
-      kafka:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-      "
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic product.events --partitions 1 --replication-factor 1
-      echo 'Topics created:'
-      kafka-topics --bootstrap-server kafka:9092 --list
-      "
-    restart: "no"
-
   products:
     image: jva44ka/ozon-simulator-go-products:latest
     container_name: products
@@ -76,8 +61,6 @@ services:
     depends_on:
       cart-db:
         condition: service_started
-      kafka:
-        condition: service_healthy
 
   products-db:
     image: postgres:17.7
