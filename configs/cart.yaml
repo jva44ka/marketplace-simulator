@@ -16,3 +16,12 @@ database:
   port: 5432
   name: ozon-simulator-go-cart
 
+jobs:
+  reservation-confirmation-outbox:
+    enabled: true
+    job-interval: 1s
+    batch-size: 100
+    max-retries: 5
+  reservation-confirmation-outbox-monitor:
+    enabled: true
+    job-interval: 10s

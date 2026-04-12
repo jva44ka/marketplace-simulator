@@ -30,10 +30,13 @@ kafka:
 jobs:
   reservation-expiry:
     enabled: true
-    ttl: 24h
-    job-interval: 10m
+    ttl: 5m
+    job-interval: 1s
   product-events-outbox:
     enabled: true
     job-interval: 1s
     batch-size: 100
     max-retries: 5
+  product-events-outbox-monitor:
+    enabled: true
+    job-interval: 10s
