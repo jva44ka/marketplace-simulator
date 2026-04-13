@@ -41,7 +41,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending",
+          "expr": "products_outbox_records_pending",
           "legendFormat": "",
           "refId": "A"
         }
@@ -75,7 +75,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter",
+          "expr": "products_outbox_records_dead_letter",
           "legendFormat": "",
           "refId": "A"
         }
@@ -175,7 +175,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending",
+          "expr": "products_outbox_records_pending",
           "legendFormat": "products pending",
           "refId": "A"
         },
@@ -206,7 +206,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter",
+          "expr": "products_outbox_records_dead_letter",
           "legendFormat": "products dead letters",
           "refId": "A"
         },
@@ -247,7 +247,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total[1m])) by (status)",
+          "expr": "sum(rate(products_outbox_records_processed_total[1m])) by (status)",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -325,7 +325,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total[5m])) * 100",
+          "expr": "sum(rate(products_outbox_records_processed_total{status=\"success\"}[5m])) / sum(rate(products_outbox_records_processed_total[5m])) * 100",
           "legendFormat": "",
           "refId": "A"
         }
@@ -402,19 +402,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(products_outbox_record_age_seconds_bucket[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(products_outbox_record_age_seconds_bucket[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(products_outbox_record_age_seconds_bucket[1m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -476,19 +476,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_kafka_publish_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(products_outbox_kafka_publish_duration_seconds_bucket[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_kafka_publish_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(products_outbox_kafka_publish_duration_seconds_bucket[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(outbox_kafka_publish_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(products_outbox_kafka_publish_duration_seconds_bucket[1m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -550,13 +550,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(products_outbox_tick_duration_seconds_bucket[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(products_outbox_tick_duration_seconds_bucket[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         }
