@@ -1,0 +1,422 @@
+apiVersion: 1
+
+groups:
+  # ──────────────────────────────────────────────
+  # Products Service — gRPC API
+  # ──────────────────────────────────────────────
+  - orgId: 1
+    name: Products API
+    folder: Ozon Simulator
+    interval: 1m
+    rules:
+
+      - uid: products-grpc-error-rate
+        title: "[Products] gRPC — Error Rate > 5%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(products_grpc_requests_total{code!=\"OK\"}[5m])) / sum(rate(products_grpc_requests_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products: высокий процент gRPC ошибок"
+          description: "Error rate: {{ $values.A.Value }}% (порог 5%)"
+
+      - uid: products-grpc-error-rate-critical
+        title: "[Products] gRPC — Error Rate > 20%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(products_grpc_requests_total{code!=\"OK\"}[5m])) / sum(rate(products_grpc_requests_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [20] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Products: критический процент gRPC ошибок"
+          description: "Error rate: {{ $values.A.Value }}% (порог 20%)"
+
+      - uid: products-grpc-latency-warning
+        title: "[Products] gRPC — Latency p95 > 1s"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(products_grpc_request_duration_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products: высокая латентность gRPC"
+          description: "p95 latency: {{ $values.A.Value }}s (порог 1s)"
+
+      - uid: products-grpc-latency-critical
+        title: "[Products] gRPC — Latency p95 > 5s"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(products_grpc_request_duration_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Products: критическая латентность gRPC"
+          description: "p95 latency: {{ $values.A.Value }}s (порог 5s)"
+
+  # ──────────────────────────────────────────────
+  # Products Service — Database
+  # ──────────────────────────────────────────────
+  - orgId: 1
+    name: Products DB
+    folder: Ozon Simulator
+    interval: 1m
+    rules:
+
+      - uid: products-db-error-rate
+        title: "[Products] DB — Error Rate > 1%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(products_db_requests_total{status=\"error\"}[5m])) / sum(rate(products_db_requests_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products: ошибки при обращении к БД"
+          description: "DB error rate: {{ $values.A.Value }}% (порог 1%)"
+
+      - uid: products-optimistic-lock-warning
+        title: "[Products] DB — Optimistic Lock Failures (warning)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "rate(products_db_optimistic_lock_failures_total[5m])"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products: учащённые optimistic lock failures"
+          description: "Lock failure rate: {{ $values.A.Value }}/s (порог 1/s). Возможна высокая конкурентность на резервации."
+
+      - uid: products-optimistic-lock-critical
+        title: "[Products] DB — Optimistic Lock Failures (critical)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "rate(products_db_optimistic_lock_failures_total[5m])"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [10] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Products: критический уровень optimistic lock failures"
+          description: "Lock failure rate: {{ $values.A.Value }}/s (порог 10/s). Вероятно сильная конкурентность или узкое место в резервациях."
+
+  # ──────────────────────────────────────────────
+  # Cart Service — HTTP API
+  # ──────────────────────────────────────────────
+  - orgId: 1
+    name: Cart API
+    folder: Ozon Simulator
+    interval: 1m
+    rules:
+
+      - uid: cart-http-error-rate
+        title: "[Cart] HTTP — Error Rate > 5%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(cart_http_requests_total{code=~\"4..|5..\"}[5m])) / sum(rate(cart_http_requests_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cart: высокий процент HTTP ошибок"
+          description: "Error rate: {{ $values.A.Value }}% (порог 5%)"
+
+      - uid: cart-http-error-rate-critical
+        title: "[Cart] HTTP — Error Rate > 20%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(cart_http_requests_total{code=~\"4..|5..\"}[5m])) / sum(rate(cart_http_requests_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [20] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cart: критический процент HTTP ошибок"
+          description: "Error rate: {{ $values.A.Value }}% (порог 20%)"
+
+      - uid: cart-http-latency-warning
+        title: "[Cart] HTTP — Latency p95 > 1s"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(cart_http_request_duration_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cart: высокая латентность HTTP"
+          description: "p95 latency: {{ $values.A.Value }}s (порог 1s)"
+
+      - uid: cart-http-latency-critical
+        title: "[Cart] HTTP — Latency p95 > 5s"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(cart_http_request_duration_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cart: критическая латентность HTTP"
+          description: "p95 latency: {{ $values.A.Value }}s (порог 5s)"
+
+  # ──────────────────────────────────────────────
+  # Cart Service — Database
+  # ──────────────────────────────────────────────
+  - orgId: 1
+    name: Cart DB
+    folder: Ozon Simulator
+    interval: 1m
+    rules:
+
+      - uid: cart-db-error-rate
+        title: "[Cart] DB — Error Rate > 1%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(cart_db_requests_total{status=\"error\"}[5m])) / sum(rate(cart_db_requests_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cart: ошибки при обращении к БД"
+          description: "DB error rate: {{ $values.A.Value }}% (порог 1%)"

@@ -1,0 +1,468 @@
+apiVersion: 1
+
+groups:
+  # ──────────────────────────────────────────────
+  # Products Outbox
+  # ──────────────────────────────────────────────
+  - orgId: 1
+    name: Products Outbox
+    folder: Ozon Simulator
+    interval: 1m
+    rules:
+
+      - uid: products-outbox-dead-letters
+        title: "[Products] Outbox — Dead Letters"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "products_outbox_records_dead_letter"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Products outbox содержит dead letter записи"
+          description: "Количество dead letters: {{ $values.A.Value }}"
+
+      - uid: products-outbox-pending-warning
+        title: "[Products] Outbox — Pending очередь (warning)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "products_outbox_records_pending"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [100] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products outbox: очередь растёт"
+          description: "Pending записей: {{ $values.A.Value }} (порог 100)"
+
+      - uid: products-outbox-pending-critical
+        title: "[Products] Outbox — Pending очередь (critical)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "products_outbox_records_pending"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1000] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Products outbox: критический размер очереди"
+          description: "Pending записей: {{ $values.A.Value }} (порог 1000)"
+
+      - uid: products-outbox-record-age-warning
+        title: "[Products] Outbox — Record Age p95 (warning)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(products_outbox_record_age_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [30] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products outbox: записи долго ждут доставки"
+          description: "p95 возраст записей: {{ $values.A.Value }}s (порог 30s)"
+
+      - uid: products-outbox-record-age-critical
+        title: "[Products] Outbox — Record Age p95 (critical)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(products_outbox_record_age_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [120] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Products outbox: критическая задержка доставки"
+          description: "p95 возраст записей: {{ $values.A.Value }}s (порог 120s)"
+
+      - uid: products-outbox-kafka-slow
+        title: "[Products] Outbox — Kafka Publish Duration p95 (warning)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(products_outbox_kafka_publish_duration_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products outbox: Kafka publish медленный"
+          description: "p95 время публикации в Kafka: {{ $values.A.Value }}s (порог 5s)"
+
+      - uid: products-outbox-success-rate
+        title: "[Products] Outbox — Success Rate < 95%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(products_outbox_records_processed_total{status=\"success\"}[5m])) / sum(rate(products_outbox_records_processed_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [95] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products outbox: низкий процент успешной обработки"
+          description: "Success rate: {{ $values.A.Value }}% (порог 95%)"
+
+  # ──────────────────────────────────────────────
+  # Cart Outbox
+  # ──────────────────────────────────────────────
+  - orgId: 1
+    name: Cart Outbox
+    folder: Ozon Simulator
+    interval: 1m
+    rules:
+
+      - uid: cart-outbox-dead-letters
+        title: "[Cart] Outbox — Dead Letters"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "cart_outbox_records_dead_letter"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cart outbox содержит dead letter записи"
+          description: "Количество dead letters: {{ $values.A.Value }}"
+
+      - uid: cart-outbox-pending-warning
+        title: "[Cart] Outbox — Pending очередь (warning)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "cart_outbox_records_pending"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [100] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cart outbox: очередь растёт"
+          description: "Pending записей: {{ $values.A.Value }} (порог 100)"
+
+      - uid: cart-outbox-pending-critical
+        title: "[Cart] Outbox — Pending очередь (critical)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "cart_outbox_records_pending"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1000] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cart outbox: критический размер очереди"
+          description: "Pending записей: {{ $values.A.Value }} (порог 1000)"
+
+      - uid: cart-outbox-record-age-warning
+        title: "[Cart] Outbox — Record Age p95 (warning)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(cart_outbox_record_age_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [30] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cart outbox: записи долго ждут доставки"
+          description: "p95 возраст записей: {{ $values.A.Value }}s (порог 30s)"
+
+      - uid: cart-outbox-record-age-critical
+        title: "[Cart] Outbox — Record Age p95 (critical)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(cart_outbox_record_age_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [120] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cart outbox: критическая задержка доставки"
+          description: "p95 возраст записей: {{ $values.A.Value }}s (порог 120s)"
+
+      - uid: cart-outbox-confirmation-slow
+        title: "[Cart] Outbox — Confirmation Duration p95 (warning)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "histogram_quantile(0.95, sum(rate(cart_outbox_confirmation_duration_seconds_bucket[5m])) by (le))"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cart outbox: gRPC ConfirmReservation медленный"
+          description: "p95 время подтверждения резервации: {{ $values.A.Value }}s (порог 5s)"
+
+      - uid: cart-outbox-success-rate
+        title: "[Cart] Outbox — Success Rate < 95%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "sum(rate(cart_outbox_records_processed_total{status=\"success\"}[5m])) / sum(rate(cart_outbox_records_processed_total[5m])) * 100"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [95] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cart outbox: низкий процент успешной обработки"
+          description: "Success rate: {{ $values.A.Value }}% (порог 95%)"

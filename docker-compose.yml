@@ -113,6 +113,17 @@ services:
       - products
       - cart
 
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./configs/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "3200:3200"   # Tempo HTTP API (for Grafana queries)
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -126,9 +137,11 @@ services:
       - ./configs/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - tempo
 
 volumes:
   products-db-data:
   cart-db-data:
   grafana-data:
   kafka-data:
+  tempo-data:

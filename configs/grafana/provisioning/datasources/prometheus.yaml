@@ -6,3 +6,16 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     access: proxy
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    isDefault: false
+    jsonData:
+      tracesToMetrics:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
+      serviceMap:
+        datasourceUid: prometheus

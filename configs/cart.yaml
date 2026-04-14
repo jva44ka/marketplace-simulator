@@ -16,6 +16,10 @@ database:
   port: 5432
   name: ozon-simulator-go-cart
 
+tracing:
+  enabled: true
+  otlp-endpoint: tempo:4317
+
 jobs:
   reservation-confirmation-outbox:
     enabled: true

@@ -27,6 +27,10 @@ kafka:
   product-events-topic: product.events
   write-timeout: 5s
 
+tracing:
+  enabled: true
+  otlp-endpoint: tempo:4317
+
 jobs:
   reservation-expiry:
     enabled: true
