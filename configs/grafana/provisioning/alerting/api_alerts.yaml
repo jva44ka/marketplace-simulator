@@ -187,39 +187,7 @@ groups:
             relativeTimeRange: { from: 300, to: 0 }
             datasourceUid: prometheus
             model:
-              expr: "rate(products_db_optimistic_lock_failures_total[5m])"
-              instant: true
-              refId: A
-          - refId: C
-            datasourceUid: "__expr__"
-            model:
-              type: threshold
-              refId: C
-              expression: A
-              conditions:
-                - evaluator: { type: gt, params: [1] }
-                  operator: { type: and }
-                  query: { params: [A] }
-                  reducer: { type: last }
-                  type: query
-        noDataState: OK
-        execErrState: Error
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Products: учащённые optimistic lock failures"
-          description: "Lock failure rate: {{ $values.A.Value }}/s (порог 1/s). Возможна высокая конкурентность на резервации."
-
-      - uid: products-optimistic-lock-critical
-        title: "[Products] DB — Optimistic Lock Failures (critical)"
-        condition: C
-        data:
-          - refId: A
-            relativeTimeRange: { from: 300, to: 0 }
-            datasourceUid: prometheus
-            model:
-              expr: "rate(products_db_optimistic_lock_failures_total[5m])"
+              expr: "increase(products_db_optimistic_lock_failures_total[5m])"
               instant: true
               refId: A
           - refId: C
@@ -236,12 +204,44 @@ groups:
                   type: query
         noDataState: OK
         execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Products: учащённые optimistic lock failures"
+          description: "{{ $values.A.Value }} откатов за 5 минут (порог 10). Возможна высокая конкурентность на резервации."
+
+      - uid: products-optimistic-lock-critical
+        title: "[Products] DB — Optimistic Lock Failures (critical)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: "increase(products_db_optimistic_lock_failures_total[5m])"
+              instant: true
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: threshold
+              refId: C
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [100] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last }
+                  type: query
+        noDataState: OK
+        execErrState: Error
         for: 2m
         labels:
           severity: critical
         annotations:
           summary: "Products: критический уровень optimistic lock failures"
-          description: "Lock failure rate: {{ $values.A.Value }}/s (порог 10/s). Вероятно сильная конкурентность или узкое место в резервациях."
+          description: "{{ $values.A.Value }} откатов за 5 минут (порог 100). Вероятно сильная конкурентность или узкое место в резервациях."
 
   # ──────────────────────────────────────────────
   # Cart Service — HTTP API
