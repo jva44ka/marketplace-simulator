@@ -12,7 +12,6 @@
 | **cart**              | [marketplace-simulator-cart](https://github.com/jva44ka/marketplace-simulator-cart)         | Корзина покупок (REST, PostgreSQL)              |
 | **products-db**       | postgres:17.7                      | БД сервиса товаров                              |
 | **cart-db**           | postgres:17.7                      | БД сервиса корзины                              |
-| **cart-consumer**     | из [marketplace-simulator-cart](https://github.com/jva44ka/marketplace-simulator-cart)     | Kafka-консьюмер событий истечения резервирований |
 | **products-migrations** | migrator из [products](https://github.com/jva44ka/marketplace-simulator-products)    | Накатывает миграции в products-db при старте    |
 | **cart-migrations**   | migrator из [cart](https://github.com/jva44ka/marketplace-simulator-cart)              | Накатывает миграции в cart-db при старте        |
 | **kafka**             | confluentinc/cp-kafka:7.9.0        | Брокер сообщений (события истечения резервирований) |
