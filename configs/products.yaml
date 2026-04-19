@@ -7,9 +7,9 @@ grpc-server:
   port: 8002
 
 database:
-  user: products
-  password: products
-  host: products-db
+  user: product
+  password: product
+  host: product-db
   port: 5432
   name: marketplace-simulator-product
 

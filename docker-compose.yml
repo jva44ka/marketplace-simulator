@@ -36,9 +36,9 @@ services:
       kafka:
         condition: service_healthy
 
-  products:
+  product:
     image: jva44ka/marketplace-simulator-product:latest
-    container_name: products
+    container_name: product
     ports:
       - "5001:5000"
     environment:
@@ -46,7 +46,7 @@ services:
     volumes:
       - ./configs/products.yaml:/app/configs/products.yaml:ro
     depends_on:
-      products-db:
+      product-db:
         condition: service_started
       kafka:
         condition: service_healthy
@@ -64,24 +64,24 @@ services:
       cart-db:
         condition: service_started
 
-  products-db:
+  product-db:
     image: postgres:17.7
-    container_name: products-db
+    container_name: product-db
     environment:
       POSTGRES_DB: marketplace-simulator-product
-      POSTGRES_USER: products
-      POSTGRES_PASSWORD: products
+      POSTGRES_USER: product
+      POSTGRES_PASSWORD: product
     ports:
       - "5433:5432"
     volumes:
-      - products-db-data:/var/lib/postgresql/data
+      - product-db-data:/var/lib/postgresql/data
 
-  products-migrations:
+  product-migrations:
     image: jva44ka/marketplace-simulator-product:migrator
-    container_name: products-migrations
+    container_name: product-migrations
     depends_on:
-      - products-db
-    command: "postgres://products:products@products-db:5432/marketplace-simulator-product?sslmode=disable up"
+      - product-db
+    command: "postgres://product:product@product-db:5432/marketplace-simulator-product?sslmode=disable up"
 
   cart-db:
     image: postgres:17.7
@@ -110,7 +110,7 @@ services:
     volumes:
       - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
-      - products
+      - product
       - cart
 
   tempo:
@@ -140,7 +140,7 @@ services:
       - tempo
 
 volumes:
-  products-db-data:
+  product-db-data:
   cart-db-data:
   grafana-data:
   kafka-data:

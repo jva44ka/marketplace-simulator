@@ -4,7 +4,7 @@ server:
 
 products:
   schema: http
-  host: products
+  host: product
   port: 8002
   auth-token: admin
   timeout: 30s

@@ -30,13 +30,13 @@ docker-compose up
 
 | Сервис     | Хост-порт | Описание                   |
 |------------|-----------|----------------------------|
-| [products](https://github.com/jva44ka/marketplace-simulator-products) | 5001 | HTTP (grpc-gateway + REST) |
-| [cart](https://github.com/jva44ka/marketplace-simulator-cart)         | 5002 | HTTP REST                  |
-| products-db| 5433      | PostgreSQL                 |
+| [product](https://github.com/jva44ka/marketplace-simulator-product) | 5001 | HTTP (grpc-gateway + REST) |
+| [cart](https://github.com/jva44ka/marketplace-simulator-cart)        | 5002 | HTTP REST                  |
+| product-db| 5433      | PostgreSQL                 |
 | cart-db    | 5434      | PostgreSQL                 |
 | kafka      | 9092      | Kafka broker               |
 | prometheus | 9090      | Prometheus UI              |
-| grafana    | 3000      | Grafana (admin / admin)    |
+| grafana    | 3000      | Grafana (admin / admin)    |~~~~
 
 ## Конфигурация сервисов
 
