@@ -2,7 +2,7 @@ server:
   host:
   port: 5000
 
-products:
+product:
   schema: http
   host: product
   port: 8002

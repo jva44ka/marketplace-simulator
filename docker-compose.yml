@@ -42,9 +42,9 @@ services:
     ports:
       - "5001:5000"
     environment:
-      CONFIG_PATH: /app/configs/products.yaml
+      CONFIG_PATH: /app/configs/product.yaml
     volumes:
-      - ./configs/products.yaml:/app/configs/products.yaml:ro
+      - ./configs/product.yaml:/app/configs/product.yaml:ro
     depends_on:
       product-db:
         condition: service_started
