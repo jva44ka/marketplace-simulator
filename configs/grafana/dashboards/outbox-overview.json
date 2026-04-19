@@ -1,6 +1,6 @@
 {
   "title": "Outbox Overview",
-  "uid": "ozon-outbox-overview",
+  "uid": "marketplace-outbox-overview",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "10s",

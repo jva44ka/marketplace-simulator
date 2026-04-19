@@ -37,7 +37,7 @@ services:
         condition: service_healthy
 
   products:
-    image: jva44ka/ozon-simulator-go-products:latest
+    image: jva44ka/marketplace-simulator-product:latest
     container_name: products
     ports:
       - "5001:5000"
@@ -52,7 +52,7 @@ services:
         condition: service_healthy
 
   cart:
-    image: jva44ka/ozon-simulator-go-cart:latest
+    image: jva44ka/marketplace-simulator-cart:latest
     container_name: cart
     ports:
       - "5002:5000"
@@ -68,7 +68,7 @@ services:
     image: postgres:17.7
     container_name: products-db
     environment:
-      POSTGRES_DB: ozon-simulator-go-products
+      POSTGRES_DB: marketplace-simulator-product
       POSTGRES_USER: products
       POSTGRES_PASSWORD: products
     ports:
@@ -77,17 +77,17 @@ services:
       - products-db-data:/var/lib/postgresql/data
 
   products-migrations:
-    image: jva44ka/ozon-simulator-go-products:migrator
+    image: jva44ka/marketplace-simulator-product:migrator
     container_name: products-migrations
     depends_on:
       - products-db
-    command: "postgres://products:products@products-db:5432/ozon-simulator-go-products?sslmode=disable up"
+    command: "postgres://products:products@products-db:5432/marketplace-simulator-product?sslmode=disable up"
 
   cart-db:
     image: postgres:17.7
     container_name: cart-db
     environment:
-      POSTGRES_DB: ozon-simulator-go-cart
+      POSTGRES_DB: marketplace-simulator-cart
       POSTGRES_USER: cart
       POSTGRES_PASSWORD: cart
     ports:
@@ -96,11 +96,11 @@ services:
       - cart-db-data:/var/lib/postgresql/data
 
   cart-migrations:
-    image: jva44ka/ozon-simulator-go-cart:migrator
+    image: jva44ka/marketplace-simulator-cart:migrator
     container_name: cart-migrations
     depends_on:
       - cart-db
-    command: "postgres://cart:cart@cart-db:5432/ozon-simulator-go-cart?sslmode=disable up"
+    command: "postgres://cart:cart@cart-db:5432/marketplace-simulator-cart?sslmode=disable up"
 
   prometheus:
     image: prom/prometheus:latest

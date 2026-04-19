@@ -14,7 +14,7 @@ database:
   password: cart
   host: cart-db
   port: 5432
-  name: ozon-simulator-go-cart
+  name: marketplace-simulator-cart
 
 tracing:
   enabled: true

@@ -1,6 +1,6 @@
 {
   "title": "Cart Service",
-  "uid": "ozon-cart",
+  "uid": "marketplace-cart",
   "schemaVersion": 38,
   "version": 2,
   "refresh": "10s",

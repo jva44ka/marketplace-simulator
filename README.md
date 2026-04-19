@@ -1,4 +1,4 @@
-# ozon-simulator-go
+# marketplace-simulator
 
 Оркестрирующий репозиторий учебного проекта «Симулятор Ozon».
 
@@ -8,13 +8,13 @@
 
 | Сервис                | Репозиторий                        | Описание                                        |
 |-----------------------|------------------------------------|-------------------------------------------------|
-| **products**          | [ozon-simulator-go-products](https://github.com/jva44ka/ozon-simulator-go-products) | Управление товарами (gRPC + REST, PostgreSQL)   |
-| **cart**              | [ozon-simulator-go-cart](https://github.com/jva44ka/ozon-simulator-go-cart)         | Корзина покупок (REST, PostgreSQL)              |
+| **products**          | [marketplace-simulator-products](https://github.com/jva44ka/marketplace-simulator-products) | Управление товарами (gRPC + REST, PostgreSQL)   |
+| **cart**              | [marketplace-simulator-cart](https://github.com/jva44ka/marketplace-simulator-cart)         | Корзина покупок (REST, PostgreSQL)              |
 | **products-db**       | postgres:17.7                      | БД сервиса товаров                              |
 | **cart-db**           | postgres:17.7                      | БД сервиса корзины                              |
-| **cart-consumer**     | из [ozon-simulator-go-cart](https://github.com/jva44ka/ozon-simulator-go-cart)     | Kafka-консьюмер событий истечения резервирований |
-| **products-migrations** | migrator из [products](https://github.com/jva44ka/ozon-simulator-go-products)    | Накатывает миграции в products-db при старте    |
-| **cart-migrations**   | migrator из [cart](https://github.com/jva44ka/ozon-simulator-go-cart)              | Накатывает миграции в cart-db при старте        |
+| **cart-consumer**     | из [marketplace-simulator-cart](https://github.com/jva44ka/marketplace-simulator-cart)     | Kafka-консьюмер событий истечения резервирований |
+| **products-migrations** | migrator из [products](https://github.com/jva44ka/marketplace-simulator-products)    | Накатывает миграции в products-db при старте    |
+| **cart-migrations**   | migrator из [cart](https://github.com/jva44ka/marketplace-simulator-cart)              | Накатывает миграции в cart-db при старте        |
 | **kafka**             | confluentinc/cp-kafka:7.9.0        | Брокер сообщений (события истечения резервирований) |
 | **prometheus**        | prom/prometheus                    | Сбор метрик с обоих сервисов                    |
 | **grafana**           | grafana/grafana                    | Дашборды для визуализации метрик                |
@@ -31,8 +31,8 @@ docker-compose up
 
 | Сервис     | Хост-порт | Описание                   |
 |------------|-----------|----------------------------|
-| [products](https://github.com/jva44ka/ozon-simulator-go-products) | 5001 | HTTP (grpc-gateway + REST) |
-| [cart](https://github.com/jva44ka/ozon-simulator-go-cart)         | 5002 | HTTP REST                  |
+| [products](https://github.com/jva44ka/marketplace-simulator-products) | 5001 | HTTP (grpc-gateway + REST) |
+| [cart](https://github.com/jva44ka/marketplace-simulator-cart)         | 5002 | HTTP REST                  |
 | products-db| 5433      | PostgreSQL                 |
 | cart-db    | 5434      | PostgreSQL                 |
 | kafka      | 9092      | Kafka broker               |
@@ -55,8 +55,8 @@ docker-compose up
 Prometheus автоматически собирает метрики с обоих сервисов каждые 15 секунд.
 
 В Grafana предустановлены два дашборда:
-- **[products](https://github.com/jva44ka/ozon-simulator-go-products)** — метрики сервиса товаров (gRPC-запросы, время ответа, ошибки БД, optimistic lock failures)
-- **[cart](https://github.com/jva44ka/ozon-simulator-go-cart)** — метрики сервиса корзины (HTTP-запросы, время ответа, ошибки БД)
+- **[products](https://github.com/jva44ka/marketplace-simulator-products)** — метрики сервиса товаров (gRPC-запросы, время ответа, ошибки БД, optimistic lock failures)
+- **[cart](https://github.com/jva44ka/marketplace-simulator-cart)** — метрики сервиса корзины (HTTP-запросы, время ответа, ошибки БД)
 
 Grafana: [http://localhost:3000](http://localhost:3000) — логин `admin`, пароль `admin`.
 
@@ -76,14 +76,14 @@ Grafana: [http://localhost:3000](http://localhost:3000) — логин `admin`, 
                      products-db :5432
 ```
 
-При оформлении заказа (`POST /user/{user_id}/cart/checkout`) сервис [cart](https://github.com/jva44ka/ozon-simulator-go-cart):
+При оформлении заказа (`POST /user/{user_id}/cart/checkout`) сервис [cart](https://github.com/jva44ka/marketplace-simulator-cart):
 1. Вызывает `ReserveProduct` для резервирования каждого товара из корзины
 2. Очищает корзину пользователя
 3. Асинхронно вызывает `ConfirmReservation` для списания товаров со склада
 
 ## Документация сервисов
 
-- [Products](https://github.com/jva44ka/ozon-simulator-go-products) Swagger UI: [http://localhost:5001/swagger/](http://localhost:5001/swagger/)
-- [Cart](https://github.com/jva44ka/ozon-simulator-go-cart) Swagger UI: [http://localhost:5002/swagger/](http://localhost:5002/swagger/)
-- [Products](https://github.com/jva44ka/ozon-simulator-go-products) метрики: [http://localhost:5001/metrics](http://localhost:5001/metrics)
-- [Cart](https://github.com/jva44ka/ozon-simulator-go-cart) метрики: [http://localhost:5002/metrics](http://localhost:5002/metrics)
+- [Products](https://github.com/jva44ka/marketplace-simulator-products) Swagger UI: [http://localhost:5001/swagger/](http://localhost:5001/swagger/)
+- [Cart](https://github.com/jva44ka/marketplace-simulator-cart) Swagger UI: [http://localhost:5002/swagger/](http://localhost:5002/swagger/)
+- [Products](https://github.com/jva44ka/marketplace-simulator-products) метрики: [http://localhost:5001/metrics](http://localhost:5001/metrics)
+- [Cart](https://github.com/jva44ka/marketplace-simulator-cart) метрики: [http://localhost:5002/metrics](http://localhost:5002/metrics)

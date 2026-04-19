@@ -1,6 +1,6 @@
 {
   "title": "Products Service",
-  "uid": "ozon-products",
+  "uid": "marketplace-products",
   "schemaVersion": 38,
   "version": 2,
   "refresh": "10s",
