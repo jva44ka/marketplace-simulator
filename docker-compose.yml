@@ -102,6 +102,21 @@ services:
       - cart-db
     command: "postgres://cart:cart@cart-db:5432/marketplace-simulator-cart?sslmode=disable up"
 
+  loadgen:
+    image: jva44ka/marketplace-simulator-loadgen:latest
+    container_name: loadgen
+    environment:
+      CONFIG_PATH: /app/configs/loadgen.yaml
+    volumes:
+      - ./configs/loadgen.yaml:/app/configs/loadgen.yaml:ro
+    depends_on:
+      kafka:
+        condition: service_healthy
+      product:
+        condition: service_started
+      cart:
+        condition: service_started
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
