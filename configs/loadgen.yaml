@@ -15,7 +15,7 @@ kafka:
   product-events-topic: product.events
   consumer-group: loadgen
 
-skus: [1, 2, 3, 4, 5]
+skus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
 workers:
   replenisher:
@@ -26,10 +26,10 @@ workers:
 
   order-flow:
     enabled: true
-    parallelism: 5
-    rps: 10
+    parallelism: 50
+    rps: 200
 
   cart-viewer:
     enabled: true
-    parallelism: 2
-    rps: 20
+    parallelism: 10
+    rps: 500

@@ -23,7 +23,7 @@ tracing:
 jobs:
   reservation-confirmation-outbox:
     enabled: true
-    job-interval: 1s
+    job-interval: 10ms
     batch-size: 100
     max-retries: 5
   reservation-confirmation-outbox-monitor:
