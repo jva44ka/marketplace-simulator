@@ -2,7 +2,7 @@
   "title": "Cart Service",
   "uid": "marketplace-cart",
   "schemaVersion": 38,
-  "version": 3,
+  "version": 4,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
@@ -34,13 +34,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total[1m]))",
+          "expr": "sum(rate(requests_total{service=\"cart\"}[1m]))",
           "legendFormat": "RPS",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.90, sum(rate(cart_http_request_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"cart\"}[1m])) by (le))",
           "legendFormat": "p90 Latency",
           "refId": "B"
         }
@@ -78,7 +78,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total{code=~\"4..|5..\"}[1m])) by (method)",
+          "expr": "sum(rate(requests_total{service=\"cart\", code=~\"4..|5..\"}[1m])) by (method)",
           "legendFormat": "{{method}}",
           "refId": "A"
         }
@@ -98,20 +98,20 @@
     {
       "id": 3,
       "title": "Traffic: Service → DB",
-      "description": "Сравнение входящего RPS сервиса и RPS до базы данных. Позволяет видеть коэффициент «умножения» запросов на БД.",
+      "description": "Сравнение входящего RPS сервиса и RPS до базы данных.",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total[1m]))",
+          "expr": "sum(rate(requests_total{service=\"cart\"}[1m]))",
           "legendFormat": "Service RPS",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_db_requests_total[1m]))",
+          "expr": "sum(rate(db_requests_total{service=\"cart\"}[1m]))",
           "legendFormat": "DB RPS",
           "refId": "B"
         }
@@ -159,7 +159,7 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "cart_outbox_records_pending",
+              "expr": "outbox_records_pending{service=\"cart\"}",
               "legendFormat": "",
               "refId": "A"
             }
@@ -193,7 +193,7 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "cart_outbox_records_dead_letter",
+              "expr": "outbox_records_dead_letter{service=\"cart\"}",
               "legendFormat": "",
               "refId": "A"
             }
@@ -226,7 +226,7 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "sum(rate(cart_outbox_records_processed_total[1m])) by (status)",
+              "expr": "sum(rate(outbox_records_processed_total{service=\"cart\"}[1m])) by (status)",
               "legendFormat": "{{status}}",
               "refId": "A"
             }

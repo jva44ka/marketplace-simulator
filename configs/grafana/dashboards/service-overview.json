@@ -1,6 +1,6 @@
 {
-  "title": "Cart — Service Overview",
-  "uid": "marketplace-cart-overview",
+  "title": "Service Overview",
+  "uid": "marketplace-service-overview",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "10s",
@@ -20,6 +20,20 @@
         "includeAll": false,
         "multi": false,
         "options": []
+      },
+      {
+        "name": "service",
+        "type": "custom",
+        "label": "Service",
+        "hide": 0,
+        "current": { "text": "cart", "value": "cart" },
+        "options": [
+          { "text": "cart",    "value": "cart",    "selected": true },
+          { "text": "product", "value": "product", "selected": false }
+        ],
+        "query": "cart,product",
+        "includeAll": false,
+        "multi": false
       }
     ]
   },
@@ -27,20 +41,20 @@
     {
       "id": 1,
       "title": "Overview — RPS by Status Code  &  p90 Latency",
-      "description": "Левая ось — запросов/сек с разбивкой по статус-кодам. Правая ось — p90 время ответа.",
+      "description": "Левая ось — RPS с разбивкой по кодам ответа. Правая ось — p90 latency. Фильтр ошибок: code!~\"2..|OK\" покрывает и HTTP 4xx/5xx, и gRPC non-OK.",
       "type": "timeseries",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total[1m])) by (code)",
+          "expr": "sum(rate(requests_total{service=\"$service\"}[1m])) by (code)",
           "legendFormat": "RPS {{code}}",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.90, sum(rate(cart_http_request_duration_seconds_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"$service\"}[1m])) by (le))",
           "legendFormat": "p90 Latency",
           "refId": "B"
         }
@@ -85,16 +99,13 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "histogram_quantile(0.50, sum(rate(cart_http_request_duration_seconds_bucket[1m])) by (le, method))",
+              "expr": "histogram_quantile(0.50, sum(rate(request_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, method))",
               "legendFormat": "{{method}}",
               "refId": "A"
             }
           ],
           "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "custom": { "lineWidth": 2, "fillOpacity": 5 }
-            }
+            "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
           },
           "options": {
             "tooltip": { "mode": "multi", "sort": "desc" },
@@ -110,16 +121,13 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "histogram_quantile(0.90, sum(rate(cart_http_request_duration_seconds_bucket[1m])) by (le, method))",
+              "expr": "histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, method))",
               "legendFormat": "{{method}}",
               "refId": "A"
             }
           ],
           "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "custom": { "lineWidth": 2, "fillOpacity": 5 }
-            }
+            "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
           },
           "options": {
             "tooltip": { "mode": "multi", "sort": "desc" },
@@ -135,16 +143,13 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "histogram_quantile(0.99, sum(rate(cart_http_request_duration_seconds_bucket[1m])) by (le, method))",
+              "expr": "histogram_quantile(0.99, sum(rate(request_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, method))",
               "legendFormat": "{{method}}",
               "refId": "A"
             }
           ],
           "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "custom": { "lineWidth": 2, "fillOpacity": 5 }
-            }
+            "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
           },
           "options": {
             "tooltip": { "mode": "multi", "sort": "desc" },
@@ -157,14 +162,14 @@
     {
       "id": 20,
       "title": "Error Rate %",
-      "description": "Доля 4xx + 5xx ответов от общего числа запросов.",
+      "description": "code!~\"2..|OK\" — универсальный фильтр: отсекает HTTP 2xx и gRPC OK одним выражением.",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 11 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total{code=~\"4..|5..\"}[1m])) / sum(rate(cart_http_requests_total[1m])) * 100",
+          "expr": "sum(rate(requests_total{service=\"$service\", code!~\"2..|OK\"}[1m])) / sum(rate(requests_total{service=\"$service\"}[1m])) * 100",
           "legendFormat": "Error Rate",
           "refId": "A"
         }
@@ -174,10 +179,7 @@
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 15
-          },
+          "custom": { "lineWidth": 2, "fillOpacity": 15 },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -198,14 +200,13 @@
     {
       "id": 21,
       "title": "Traffic by Status Code %",
-      "description": "Доля каждого статус-кода от общего трафика.",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total[1m])) by (code) / ignoring(code) group_left() sum(rate(cart_http_requests_total[1m])) * 100",
+          "expr": "sum(rate(requests_total{service=\"$service\"}[1m])) by (code) / ignoring(code) group_left() sum(rate(requests_total{service=\"$service\"}[1m])) * 100",
           "legendFormat": "{{code}}",
           "refId": "A"
         }
@@ -215,11 +216,7 @@
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "stacking": { "mode": "normal", "group": "A" }
-          }
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "stacking": { "mode": "normal", "group": "A" } }
         }
       },
       "options": {
@@ -230,15 +227,14 @@
 
     {
       "id": 22,
-      "title": "Traffic by Route %",
-      "description": "Доля каждого маршрута от общего трафика.",
+      "title": "Traffic by Method %",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total[1m])) by (method) / ignoring(method) group_left() sum(rate(cart_http_requests_total[1m])) * 100",
+          "expr": "sum(rate(requests_total{service=\"$service\"}[1m])) by (method) / ignoring(method) group_left() sum(rate(requests_total{service=\"$service\"}[1m])) * 100",
           "legendFormat": "{{method}}",
           "refId": "A"
         }
@@ -248,11 +244,7 @@
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "stacking": { "mode": "normal", "group": "A" }
-          }
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "stacking": { "mode": "normal", "group": "A" } }
         }
       },
       "options": {
@@ -263,15 +255,14 @@
 
     {
       "id": 23,
-      "title": "Status Code Distribution per Route %",
-      "description": "Для каждого маршрута — доля каждого статус-кода в трафике этого маршрута. Серии вида «маршрут / код».",
+      "title": "Status Code Distribution per Method %",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 27 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(cart_http_requests_total[1m])) by (method, code) / ignoring(code) group_left() sum(rate(cart_http_requests_total[1m])) by (method) * 100",
+          "expr": "sum(rate(requests_total{service=\"$service\"}[1m])) by (method, code) / ignoring(code) group_left() sum(rate(requests_total{service=\"$service\"}[1m])) by (method) * 100",
           "legendFormat": "{{method}}  /  {{code}}",
           "refId": "A"
         }
