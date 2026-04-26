@@ -2,7 +2,7 @@
   "title": "Outbox Overview",
   "uid": "marketplace-outbox-overview",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
@@ -41,7 +41,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service="product"}",
+          "expr": "outbox_records_pending{service=\"product\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -75,7 +75,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service="product"}",
+          "expr": "outbox_records_dead_letter{service=\"product\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -108,7 +108,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service="cart"}",
+          "expr": "outbox_records_pending{service=\"cart\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -142,7 +142,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service="cart"}",
+          "expr": "outbox_records_dead_letter{service=\"cart\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -175,13 +175,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service="product"}",
+          "expr": "outbox_records_pending{service=\"product\"}",
           "legendFormat": "products pending",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service="cart"}",
+          "expr": "outbox_records_pending{service=\"cart\"}",
           "legendFormat": "cart pending",
           "refId": "B"
         }
@@ -206,13 +206,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service="product"}",
+          "expr": "outbox_records_dead_letter{service=\"product\"}",
           "legendFormat": "products dead letters",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service="cart"}",
+          "expr": "outbox_records_dead_letter{service=\"cart\"}",
           "legendFormat": "cart dead letters",
           "refId": "B"
         }
@@ -247,7 +247,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service="product"}[1m])) by (status)",
+          "expr": "sum(rate(outbox_records_processed_total{service=\"product\"}[1m])) by (status)",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -286,7 +286,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service="cart"}[1m])) by (status)",
+          "expr": "sum(rate(outbox_records_processed_total{service=\"cart\"}[1m])) by (status)",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -325,7 +325,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service="product"}{status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total{service="product"}[5m])) * 100",
+          "expr": "sum(rate(outbox_records_processed_total{service=\"product\", status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total{service=\"product\"}[5m])) * 100",
           "legendFormat": "",
           "refId": "A"
         }
@@ -359,7 +359,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service="cart"}{status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total{service="cart"}[5m])) * 100",
+          "expr": "sum(rate(outbox_records_processed_total{service=\"cart\", status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total{service=\"cart\"}[5m])) * 100",
           "legendFormat": "",
           "refId": "A"
         }
@@ -402,28 +402,25 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service="product"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service=\"product\"}[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service="product"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service=\"product\"}[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service="product"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service=\"product\"}[1m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "lineWidth": 2 }
-        }
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
@@ -439,28 +436,25 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service="cart"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service=\"cart\"}[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service="cart"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service=\"cart\"}[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service="cart"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service=\"cart\"}[1m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "lineWidth": 2 }
-        }
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
@@ -494,10 +488,7 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "lineWidth": 2 }
-        }
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
@@ -531,10 +522,7 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "lineWidth": 2 }
-        }
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
@@ -550,22 +538,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service="product"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"product\"}[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service="product"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"product\"}[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "lineWidth": 2 }
-        }
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
@@ -581,22 +566,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service="cart"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"cart\"}[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service="cart"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"cart\"}[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "lineWidth": 2 }
-        }
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
