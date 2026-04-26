@@ -29,7 +29,7 @@ workers:
   order-flow:
     enabled: true
     parallelism: 200
-    rps: 300
+    rps: 100
 
   cart-viewer:
     enabled: true

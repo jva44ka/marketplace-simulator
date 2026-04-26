@@ -2,7 +2,7 @@
   "title": "Products Service",
   "uid": "marketplace-products",
   "schemaVersion": 38,
-  "version": 4,
+  "version": 5,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
@@ -171,17 +171,152 @@
     },
 
     {
+      "id": 200,
+      "title": "Database",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 201,
+          "title": "Connection Pool",
+          "description": "Состояние пула соединений: max (лимит), total (открыто), acquired (заняты), idle (свободны).",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "db_pool_max_conns{service=\"product\"}",
+              "legendFormat": "max",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "db_pool_total_conns{service=\"product\"}",
+              "legendFormat": "total",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "db_pool_acquired_conns{service=\"product\"}",
+              "legendFormat": "acquired",
+              "refId": "C"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "db_pool_idle_conns{service=\"product\"}",
+              "legendFormat": "idle",
+              "refId": "D"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": { "lineWidth": 2, "fillOpacity": 5 }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "max" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+                  { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [8, 4] } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "acquired" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "idle" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "tooltip": { "mode": "multi", "sort": "desc" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        },
+        {
+          "id": 202,
+          "title": "Avg Connection Acquire Duration",
+          "description": "Среднее время ожидания соединения из пула за последний интервал сбора. Рост — сигнал перегрузки пула.",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "db_pool_avg_acquire_duration_seconds{service=\"product\"}",
+              "legendFormat": "avg acquire",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": { "lineWidth": 2, "fillOpacity": 10 },
+              "color": { "fixedColor": "orange", "mode": "fixed" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 0.01 },
+                  { "color": "red", "value": 0.1 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "tooltip": { "mode": "single" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        },
+        {
+          "id": 203,
+          "title": "DB Query Duration — p90 by Method",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 33 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "histogram_quantile(0.90, sum(rate(db_request_duration_seconds_bucket{service=\"product\"}[1m])) by (le, method))",
+              "legendFormat": "{{method}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": { "lineWidth": 2, "fillOpacity": 5 }
+            }
+          },
+          "options": {
+            "tooltip": { "mode": "multi", "sort": "desc" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        }
+      ]
+    },
+
+    {
       "id": 100,
       "title": "Outbox",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 },
       "collapsed": true,
       "panels": [
         {
           "id": 101,
           "title": "Pending Records",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 25 },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 42 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -215,7 +350,7 @@
           "id": 102,
           "title": "Dead Letters",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 25 },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 42 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -248,7 +383,7 @@
           "id": 103,
           "title": "Outbox Processing Rate",
           "type": "timeseries",
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {

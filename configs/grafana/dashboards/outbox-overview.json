@@ -2,7 +2,7 @@
   "title": "Outbox Overview",
   "uid": "marketplace-outbox-overview",
   "schemaVersion": 38,
-  "version": 2,
+  "version": 3,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
@@ -20,6 +20,20 @@
         "includeAll": false,
         "multi": false,
         "options": []
+      },
+      {
+        "name": "service",
+        "type": "custom",
+        "label": "Service",
+        "hide": 0,
+        "current": { "text": "cart", "value": "cart" },
+        "options": [
+          { "text": "cart",    "value": "cart",    "selected": true },
+          { "text": "product", "value": "product", "selected": false }
+        ],
+        "query": "cart,product",
+        "includeAll": false,
+        "multi": false
       }
     ]
   },
@@ -34,14 +48,14 @@
     },
     {
       "id": 2,
-      "title": "Products — Pending",
+      "title": "Pending Records",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service=\"product\"}",
+          "expr": "outbox_records_pending{service=\"$service\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -68,14 +82,14 @@
     },
     {
       "id": 3,
-      "title": "Products — Dead Letters",
+      "title": "Dead Letters",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service=\"product\"}",
+          "expr": "outbox_records_dead_letter{service=\"$service\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -101,88 +115,21 @@
     },
     {
       "id": 4,
-      "title": "Cart — Pending",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service=\"cart\"}",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 100 },
-              { "color": "red", "value": 1000 }
-            ]
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "colorMode": "background",
-        "graphMode": "area",
-        "textMode": "auto"
-      }
-    },
-    {
-      "id": 5,
-      "title": "Cart — Dead Letters",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service=\"cart\"}",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 1 }
-            ]
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "colorMode": "background",
-        "graphMode": "area",
-        "textMode": "auto"
-      }
-    },
-    {
-      "id": 6,
       "title": "Pending Records Over Time",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service=\"product\"}",
-          "legendFormat": "products pending",
+          "expr": "outbox_records_pending{service=\"$service\"}",
+          "legendFormat": "pending",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service=\"cart\"}",
-          "legendFormat": "cart pending",
+          "expr": "outbox_records_dead_letter{service=\"$service\"}",
+          "legendFormat": "dead letters",
           "refId": "B"
         }
       ],
@@ -190,7 +137,13 @@
         "defaults": {
           "unit": "short",
           "custom": { "lineWidth": 2 }
-        }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "dead letters" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          }
+        ]
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
@@ -198,35 +151,39 @@
       }
     },
     {
-      "id": 7,
-      "title": "Dead Letters Over Time",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "id": 5,
+      "title": "Success Rate %",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service=\"product\"}",
-          "legendFormat": "products dead letters",
+          "expr": "sum(rate(outbox_records_processed_total{service=\"$service\", status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total{service=\"$service\"}[5m])) * 100",
+          "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service=\"cart\"}",
-          "legendFormat": "cart dead letters",
-          "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "custom": { "lineWidth": 2 },
-          "color": { "mode": "palette-classic" }
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 90 },
+              { "color": "green", "value": 99 }
+            ]
+          }
         }
       },
       "options": {
-        "tooltip": { "mode": "multi", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
       }
     },
 
@@ -240,14 +197,14 @@
     },
     {
       "id": 11,
-      "title": "Products — Processing Rate by Status",
+      "title": "Processing Rate by Status",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service=\"product\"}[1m])) by (status)",
+          "expr": "sum(rate(outbox_records_processed_total{service=\"$service\"}[1m])) by (status)",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -275,113 +232,6 @@
       "options": {
         "tooltip": { "mode": "multi", "sort": "none" },
         "legend": { "displayMode": "list", "placement": "bottom" }
-      }
-    },
-    {
-      "id": 12,
-      "title": "Cart — Processing Rate by Status",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service=\"cart\"}[1m])) by (status)",
-          "legendFormat": "{{status}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": { "lineWidth": 2, "fillOpacity": 15, "stacking": { "mode": "normal" } }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "success" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "failed" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "dead_letter" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
-          }
-        ]
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      }
-    },
-    {
-      "id": 13,
-      "title": "Products — Success Rate %",
-      "type": "gauge",
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 22 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service=\"product\", status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total{service=\"product\"}[5m])) * 100",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 90 },
-              { "color": "green", "value": 99 }
-            ]
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "showThresholdMarkers": true
-      }
-    },
-    {
-      "id": 14,
-      "title": "Cart — Success Rate %",
-      "type": "gauge",
-      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 22 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service=\"cart\", status=\"success\"}[5m])) / sum(rate(outbox_records_processed_total{service=\"cart\"}[5m])) * 100",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 90 },
-              { "color": "green", "value": 99 }
-            ]
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "showThresholdMarkers": true
       }
     },
 
@@ -389,32 +239,32 @@
       "id": 20,
       "title": "Latency",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
       "collapsed": false,
       "panels": []
     },
     {
       "id": 21,
-      "title": "Products — Record Age p50 / p95 / p99",
+      "title": "Record Age — p50 / p95 / p99",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service=\"product\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service=\"product\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service=\"product\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -429,28 +279,22 @@
     },
     {
       "id": 22,
-      "title": "Cart — Record Age p50 / p95 / p99",
+      "title": "Tick Duration — p50 / p95",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service=\"cart\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service=\"cart\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service=\"cart\"}[1m])) by (le))",
-          "legendFormat": "p99",
-          "refId": "C"
         }
       ],
       "fieldConfig": {
@@ -463,9 +307,10 @@
     },
     {
       "id": 23,
-      "title": "Products — Kafka Publish Duration p50 / p95 / p99",
+      "title": "Kafka Publish Duration — p50 / p95 / p99",
+      "description": "Только для service=product. Для cart данных нет.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 39 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -497,9 +342,10 @@
     },
     {
       "id": 24,
-      "title": "Cart — Confirmation Duration p50 / p95 / p99",
+      "title": "Confirmation Duration — p50 / p95 / p99",
+      "description": "Только для service=cart. Для product данных нет.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 39 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -519,62 +365,6 @@
           "expr": "histogram_quantile(0.99, sum(rate(cart_outbox_confirmation_duration_seconds_bucket[1m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      }
-    },
-    {
-      "id": 25,
-      "title": "Products — Tick Duration p50 / p95",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 47 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"product\"}[1m])) by (le))",
-          "legendFormat": "p50",
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"product\"}[1m])) by (le))",
-          "legendFormat": "p95",
-          "refId": "B"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      }
-    },
-    {
-      "id": 26,
-      "title": "Cart — Tick Duration p50 / p95",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 47 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"cart\"}[1m])) by (le))",
-          "legendFormat": "p50",
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"cart\"}[1m])) by (le))",
-          "legendFormat": "p95",
-          "refId": "B"
         }
       ],
       "fieldConfig": {
