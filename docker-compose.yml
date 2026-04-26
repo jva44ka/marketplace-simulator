@@ -75,12 +75,18 @@ services:
       - "5433:5432"
     volumes:
       - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U product -d marketplace-simulator-product"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   product-migrations:
     image: jva44ka/marketplace-simulator-product:migrator
     container_name: product-migrations
     depends_on:
-      - product-db
+      product-db:
+        condition: service_healthy
     command: "postgres://product:product@product-db:5432/marketplace-simulator-product?sslmode=disable up"
 
   cart-db:
@@ -94,12 +100,18 @@ services:
       - "5434:5432"
     volumes:
       - cart-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cart -d marketplace-simulator-cart"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   cart-migrations:
     image: jva44ka/marketplace-simulator-cart:migrator
     container_name: cart-migrations
     depends_on:
-      - cart-db
+      cart-db:
+        condition: service_healthy
     command: "postgres://cart:cart@cart-db:5432/marketplace-simulator-cart?sslmode=disable up"
 
   loadgen:

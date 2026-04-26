@@ -27,6 +27,11 @@ kafka:
   product-events-topic: product.events
   write-timeout: 5s
 
+rate-limiter:
+  enabled: true
+  rps: 500
+  burst: 50
+
 tracing:
   enabled: true
   otlp-endpoint: tempo:4317

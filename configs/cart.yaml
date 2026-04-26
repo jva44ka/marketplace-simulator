@@ -2,12 +2,18 @@ server:
   host:
   port: 5000
 
-product:
+products:
   schema: http
   host: product
   port: 8002
   auth-token: admin
   timeout: 30s
+  circuit-breaker:
+    enabled: true
+    max-requests: 3
+    interval: 10s
+    timeout: 5s
+    threshold: 0.6
 
 database:
   user: cart
