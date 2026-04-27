@@ -2,7 +2,7 @@
   "title": "Cart Service",
   "uid": "marketplace-cart",
   "schemaVersion": 38,
-  "version": 5,
+  "version": 6,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
@@ -24,12 +24,72 @@
     ]
   },
   "panels": [
+
+    {
+      "id": 50,
+      "title": "Alert States",
+      "description": "Зелёный = OK, красный = условие алерта выполняется. High Error Rate: ошибки > 5%. High Latency: p90 > 500ms. DB Pool Pressure: среднее acquire > 50ms.",
+      "type": "state-timeline",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "(sum(rate(requests_total{service=\"cart\", code=~\"4..|5..\"}[1m])) / sum(rate(requests_total{service=\"cart\"}[1m]))) > bool 0.05",
+          "legendFormat": "High Error Rate",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"cart\"}[1m])) by (le)) > bool 0.5",
+          "legendFormat": "High Latency p90",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "db_pool_avg_acquire_duration_seconds{service=\"cart\"} > bool 0.05",
+          "legendFormat": "DB Pool Pressure",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 1, "fillOpacity": 70 },
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red",   "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "OK",     "color": "green", "index": 0 },
+                "1": { "text": "Firing", "color": "red",   "index": 1 }
+              }
+            }
+          ]
+        }
+      },
+      "options": {
+        "mergeValues": true,
+        "showValue": "never",
+        "alignValue": "center",
+        "rowHeight": 0.9,
+        "legend": { "displayMode": "list", "placement": "right" },
+        "tooltip": { "mode": "single" }
+      }
+    },
+
     {
       "id": 1,
       "title": "Overall RPS & p90 Latency",
       "description": "Левая ось — суммарный RPS. Правая ось — p90 время ответа.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 3 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -73,7 +133,7 @@
       "id": 2,
       "title": "Error Rate by Method",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -100,7 +160,7 @@
       "title": "Traffic: Service → DB",
       "description": "Сравнение входящего RPS сервиса и RPS до базы данных.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -147,7 +207,7 @@
       "id": 200,
       "title": "Database",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 },
       "collapsed": true,
       "panels": [
         {
@@ -155,7 +215,7 @@
           "title": "Connection Pool",
           "description": "Состояние пула соединений: max (лимит), total (открыто), acquired (заняты), idle (свободны).",
           "type": "timeseries",
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -198,15 +258,11 @@
               },
               {
                 "matcher": { "id": "byName", "options": "acquired" },
-                "properties": [
-                  { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }
-                ]
+                "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
               },
               {
                 "matcher": { "id": "byName", "options": "idle" },
-                "properties": [
-                  { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
-                ]
+                "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
               }
             ]
           },
@@ -220,7 +276,7 @@
           "title": "Avg Connection Acquire Duration",
           "description": "Среднее время ожидания соединения из пула за последний интервал сбора. Рост — сигнал перегрузки пула.",
           "type": "timeseries",
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -254,7 +310,7 @@
           "id": 203,
           "title": "DB Query Duration — p90 by Method",
           "type": "timeseries",
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 25 },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -282,14 +338,14 @@
       "id": 100,
       "title": "Outbox",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
       "collapsed": true,
       "panels": [
         {
           "id": 101,
           "title": "Pending Records",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 34 },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 37 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -323,7 +379,7 @@
           "id": 102,
           "title": "Dead Letters",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 34 },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 37 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -356,7 +412,7 @@
           "id": 103,
           "title": "Outbox Processing Rate",
           "type": "timeseries",
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -393,5 +449,6 @@
         }
       ]
     }
+
   ]
 }
