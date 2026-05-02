@@ -4,6 +4,16 @@
 
 Запускает всю инфраструктуру через `docker-compose`: микросервисы, базы данных, генератор нагрузки и observability-стек.
 
+## Содержание
+
+- [Состав системы](#состав-системы)
+- [Быстрый старт](#быстрый-старт)
+- [Порты](#порты)
+- [Конфигурация](#конфигурация)
+- [Архитектура взаимодействия сервисов](#архитектура-взаимодействия-сервисов)
+- [Observability](#observability)
+- [Документация сервисов](#документация-сервисов)
+
 ## Состав системы
 
 | Сервис                  | Репозиторий                                                                                     | Описание                                                            |
@@ -61,18 +71,6 @@ docker-compose down -v
 | Swagger — product | [http://localhost:5001/swagger/](http://localhost:5001/swagger/) | REST API сервиса товаров |
 | Swagger — cart | [http://localhost:5002/swagger/](http://localhost:5002/swagger/) | REST API сервиса корзины |
 
-### Дашборды Grafana
-
-После входа в Grafana (`admin` / `admin`) все дашборды доступны в папке **Marketplace Simulator**:
-
-| Дашборд | Что смотреть |
-|---------|-------------|
-| [Cart Service](http://localhost:3000/d/marketplace-cart) | HTTP RPS, latency, ошибки, DB-пул, outbox, бизнес-метрики |
-| [Products Service](http://localhost:3000/d/marketplace-products) | gRPC RPS, latency, optimistic lock failures, outbox |
-| [Business Metrics](http://localhost:3000/d/marketplace-business) | Воронка заказов, выручка, активные корзины |
-| [Outbox Overview](http://localhost:3000/d/marketplace-outbox-overview) | Очередь и dead letter обоих сервисов |
-| [Postgres Overview](http://localhost:3000/d/marketplace-postgres-overview) | Пулы соединений, latency запросов к БД |
-
 ## Порты
 
 | Сервис      | Хост-порт | Описание                        |
@@ -103,54 +101,107 @@ docker-compose down -v
 | `promtail.yaml`    | Конфиг Promtail (сбор логов)             |
 | `grafana/`         | Provisioning и дашборды Grafana          |
 
+## Архитектура взаимодействия сервисов
+
+### Добавление товара в корзину
+
+```
+  Client
+    │
+    │  POST /user/{id}/cart/{sku}
+    ▼
+  cart :5002
+    │
+    │  GetProduct(sku)  ← проверка наличия товара и получение цены
+    │  gRPC
+    ▼
+  product :8002
+    │
+    ▼
+  product-db (products)
+```
+
+Сервис cart обращается к product за данными о товаре (цена, название). Сам товар на складе при добавлении в корзину **не резервируется** — резервирование происходит только при чекауте.
+
+### Оформление заказа (checkout)
+
+```
+  Client
+    │
+    │  POST /user/{id}/cart/checkout
+    ▼
+  cart :5002
+    │
+    ├─① Reserve(skus)           ← резервирует товары на складе
+    │  gRPC
+    ▼
+  product :8002
+    │
+    ▼
+  product-db (reservations)
+    │
+  cart :5002
+    │
+    ├─② TX: удалить корзину + создать outbox-записи
+    ▼
+  cart-db
+    │
+    │  (async, outbox job)
+    ├─③ ConfirmReservation(ids)  ← списывает товары со склада
+    │  gRPC
+    ▼
+  product :8002
+    │
+    ▼
+  product-db (products, reservations)
+    │
+    │  (Kafka outbox, product side)
+    ├─④ PublishProductChanged    ← событие об изменении остатков
+    ▼
+  kafka :9092
+    │
+    ▼
+  loadgen (replenisher)
+    │
+    │  IncreaseProductCount      ← пополнение, если остаток < порога
+    │  gRPC
+    ▼
+  product :8002
+```
+
+**①** Cart вызывает `Reserve` на product — product создаёт записи резервирований, остатки пока не изменяются.
+
+**②** Cart в одной транзакции очищает корзину и создаёт outbox-записи для подтверждения. При ошибке транзакции сразу вызывает `ReleaseReservation`.
+
+**③** Outbox job асинхронно вызывает `ConfirmReservation` — product списывает товары со склада и удаляет резервирования. При неудаче — ретрай, после исчерпания попыток — dead letter.
+
+**④** Product публикует событие об изменении товара в Kafka через собственный outbox. Loadgen-replenisher читает топик и пополняет склад когда остаток падает ниже порога.
+
 ## Observability
 
-| Инструмент | Что собирает           | Адрес                                    |
-|------------|------------------------|------------------------------------------|
-| Prometheus | Метрики сервисов       | [http://localhost:9090](http://localhost:9090) |
-| Tempo      | Распределённые трейсы  | через Grafana                            |
-| Loki       | Логи всех контейнеров  | через Grafana                            |
-| Grafana    | Единый UI              | [http://localhost:3000](http://localhost:3000) (admin / admin) |
+| Инструмент | Что собирает | Адрес |
+|------------|-------------|-------|
+| Prometheus | Метрики сервисов | [http://localhost:9090](http://localhost:9090) |
+| Tempo | Распределённые трейсы | через Grafana |
+| Loki | Логи всех контейнеров | через Grafana |
+| Grafana | Единый UI | [http://localhost:3000](http://localhost:3000) (admin / admin) |
 
-В Grafana предустановлены дашборды:
-
-| Дашборд              | Описание                                                                                   |
-|----------------------|--------------------------------------------------------------------------------------------|
-| **cart**             | HTTP-запросы, latency, ошибки, DB-пул, outbox, бизнес-метрики (заказы, выручка, корзины)  |
-| **products**         | gRPC-запросы, latency, ошибки, optimistic lock failures, DB-пул, outbox                   |
-| **business**         | Воронка заказов, выручка, активные корзины, breakdown причин отказов чекаута               |
-| **outbox-overview**  | Сводный дашборд по outbox обоих сервисов (очередь, dead letter, throughput)                |
-| **postgres-overview**| Состояние пулов соединений и latency запросов к БД обоих сервисов                         |
-
-Datasource-связки:
+Datasource-связки внутри Grafana:
 - Из трейса (Tempo) → переход в логи (Loki) по `traceId`
 - Из лога (Loki) → переход в трейс (Tempo) по `traceId`
 - Из трейса (Tempo) → переход в метрики (Prometheus)
 
-## Архитектура взаимодействия сервисов
+### Дашборды
 
-```
-              HTTP REST
-  Client ──────────────► cart :5002
-                          │
-       gRPC (Docker net.) │
-                          ▼
-                       product :8002
-                          │
-                    Kafka outbox
-                          ▼
-                        kafka :9092
-                          │
-                       loadgen
-                    (replenisher)
-```
+Все дашборды доступны в папке **Marketplace Simulator** после входа в Grafana:
 
-При оформлении заказа (`POST /user/{user_id}/cart/checkout`) сервис cart:
-1. Вызывает `Reserve` на product — резервирует каждый товар из корзины
-2. Сохраняет задачи подтверждения в outbox (в одной транзакции с очисткой корзины)
-3. Outbox job асинхронно вызывает `ConfirmReservation` — списывает товары со склада
-
-При пополнении товаров loadgen читает Kafka-топик `product.events` и вызывает `IncreaseProductCount`, когда остаток падает ниже порога.
+| Дашборд | Ссылка | Что смотреть |
+|---------|--------|-------------|
+| Cart Service | [→](http://localhost:3000/d/marketplace-cart) | HTTP RPS, latency, ошибки, DB-пул, outbox, бизнес-метрики |
+| Products Service | [→](http://localhost:3000/d/marketplace-products) | gRPC RPS, latency, optimistic lock failures, outbox |
+| Business Metrics | [→](http://localhost:3000/d/marketplace-business) | Воронка заказов, выручка, активные корзины |
+| Outbox Overview | [→](http://localhost:3000/d/marketplace-outbox-overview) | Очередь и dead letter обоих сервисов |
+| Postgres Overview | [→](http://localhost:3000/d/marketplace-postgres-overview) | Пулы соединений, latency запросов к БД |
 
 ## Документация сервисов
 
