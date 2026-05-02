@@ -2,7 +2,7 @@
   "title": "Cart Service",
   "uid": "marketplace-cart",
   "schemaVersion": 38,
-  "version": 6,
+  "version": 7,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
@@ -27,60 +27,61 @@
 
     {
       "id": 50,
-      "title": "Alert States",
-      "description": "Зелёный = OK, красный = условие алерта выполняется. High Error Rate: ошибки > 5%. High Latency: p90 > 500ms. DB Pool Pressure: среднее acquire > 50ms.",
-      "type": "state-timeline",
-      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "title": "Alerts",
+      "description": "Точка появляется когда условие алерта выполняется. Нет точки = всё OK. High Error Rate: ошибки > 5%. High Latency: p90 > 500ms. DB Pool Pressure: avg acquire > 50ms.",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "(sum(rate(requests_total{service=\"cart\", code=~\"4..|5..\"}[1m])) / sum(rate(requests_total{service=\"cart\"}[1m]))) > bool 0.05",
+          "expr": "(sum(rate(requests_total{service=\"cart\", code=~\"4..|5..\"}[1m])) / sum(rate(requests_total{service=\"cart\"}[1m])) > 0.05) * 0 + 1",
           "legendFormat": "High Error Rate",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"cart\"}[1m])) by (le)) > bool 0.5",
+          "expr": "(histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"cart\"}[1m])) by (le)) > 0.5) * 0 + 1",
           "legendFormat": "High Latency p90",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "db_pool_avg_acquire_duration_seconds{service=\"cart\"} > bool 0.05",
+          "expr": "(db_pool_avg_acquire_duration_seconds{service=\"cart\"} > 0.05) * 0 + 1",
           "legendFormat": "DB Pool Pressure",
           "refId": "C"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": { "lineWidth": 1, "fillOpacity": 70 },
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red",   "value": 1 }
-            ]
+          "min": 0,
+          "max": 2,
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 14,
+            "lineWidth": 0,
+            "spanNulls": false,
+            "axisPlacement": "hidden"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "High Error Rate" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
           },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": { "text": "OK",     "color": "green", "index": 0 },
-                "1": { "text": "Firing", "color": "red",   "index": 1 }
-              }
-            }
-          ]
-        }
+          {
+            "matcher": { "id": "byName", "options": "High Latency p90" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "DB Pool Pressure" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "purple", "mode": "fixed" } }]
+          }
+        ]
       },
       "options": {
-        "mergeValues": true,
-        "showValue": "never",
-        "alignValue": "center",
-        "rowHeight": 0.9,
-        "legend": { "displayMode": "list", "placement": "right" },
-        "tooltip": { "mode": "single" }
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
       }
     },
 
@@ -335,17 +336,217 @@
     },
 
     {
+      "id": 300,
+      "title": "Business",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 301,
+          "title": "Orders / s",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 37 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "sum(rate(checkouts_total{service=\"cart\", status=\"success\"}[1m]))",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "color": { "fixedColor": "green", "mode": "fixed" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{ "color": "green", "value": null }]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 302,
+          "title": "Checkout Success Rate",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 37 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "100 * sum(rate(checkouts_total{service=\"cart\", status=\"success\"}[5m])) / (sum(rate(checkouts_total{service=\"cart\"}[5m])) > 0)",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "orange", "value": 80 },
+                  { "color": "green", "value": 95 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 303,
+          "title": "Active Carts",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 37 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "active_carts{service=\"cart\"}",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "fixedColor": "blue", "mode": "fixed" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{ "color": "blue", "value": null }]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 304,
+          "title": "Cart Items",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 37 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "cart_items_total{service=\"cart\"}",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "fixedColor": "purple", "mode": "fixed" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{ "color": "purple", "value": null }]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 305,
+          "title": "Checkouts / s — success vs failed",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 41 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "sum by (status) (rate(checkouts_total{service=\"cart\"}[1m]))",
+              "legendFormat": "{{status}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": { "lineWidth": 2, "fillOpacity": 15, "stacking": { "mode": "normal" } }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "success" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "failed" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+              }
+            ]
+          },
+          "options": {
+            "tooltip": { "mode": "multi", "sort": "none" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        },
+        {
+          "id": 306,
+          "title": "Revenue / s",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 41 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "sum(rate(checkout_value_total{service=\"cart\"}[1m]))",
+              "legendFormat": "revenue/s",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "currencyRUB",
+              "custom": { "lineWidth": 2, "fillOpacity": 15 },
+              "color": { "fixedColor": "green", "mode": "fixed" }
+            }
+          },
+          "options": {
+            "tooltip": { "mode": "single" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        }
+      ]
+    },
+
+    {
       "id": 100,
       "title": "Outbox",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 53 },
       "collapsed": true,
       "panels": [
         {
           "id": 101,
           "title": "Pending Records",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 37 },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 54 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -379,7 +580,7 @@
           "id": 102,
           "title": "Dead Letters",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 37 },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 54 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -412,7 +613,7 @@
           "id": 103,
           "title": "Outbox Processing Rate",
           "type": "timeseries",
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 54 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {

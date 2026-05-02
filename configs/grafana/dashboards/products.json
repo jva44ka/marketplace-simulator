@@ -27,66 +27,71 @@
 
     {
       "id": 50,
-      "title": "Alert States",
-      "description": "Зелёный = OK, красный = условие алерта выполняется. High Error Rate: ошибки > 5%. High Latency: p90 > 500ms. DB Pool Pressure: среднее acquire > 50ms. Lock Failures: оптимистичные блокировки > 0/s.",
-      "type": "state-timeline",
-      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "title": "Alerts",
+      "description": "Точка появляется когда условие алерта выполняется. Нет точки = всё OK. High Error Rate: ошибки > 5%. High Latency: p90 > 500ms. DB Pool Pressure: avg acquire > 50ms. Lock Failures: оптимистичные блокировки > 0/s.",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "(sum(rate(requests_total{service=\"product\", code!=\"OK\"}[1m])) / sum(rate(requests_total{service=\"product\"}[1m]))) > bool 0.05",
+          "expr": "(sum(rate(requests_total{service=\"product\", code!=\"OK\"}[1m])) / sum(rate(requests_total{service=\"product\"}[1m])) > 0.05) * 0 + 1",
           "legendFormat": "High Error Rate",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"product\"}[1m])) by (le)) > bool 0.5",
+          "expr": "(histogram_quantile(0.90, sum(rate(request_duration_seconds_bucket{service=\"product\"}[1m])) by (le)) > 0.5) * 0 + 1",
           "legendFormat": "High Latency p90",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "db_pool_avg_acquire_duration_seconds{service=\"product\"} > bool 0.05",
+          "expr": "(db_pool_avg_acquire_duration_seconds{service=\"product\"} > 0.05) * 0 + 1",
           "legendFormat": "DB Pool Pressure",
           "refId": "C"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(products_db_optimistic_lock_failures_total[1m]) > bool 0",
+          "expr": "(rate(products_db_optimistic_lock_failures_total[1m]) > 0) * 0 + 1",
           "legendFormat": "Lock Failures",
           "refId": "D"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": { "lineWidth": 1, "fillOpacity": 70 },
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red",   "value": 1 }
-            ]
+          "min": 0,
+          "max": 2,
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 14,
+            "lineWidth": 0,
+            "spanNulls": false,
+            "axisPlacement": "hidden"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "High Error Rate" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
           },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": { "text": "OK",     "color": "green", "index": 0 },
-                "1": { "text": "Firing", "color": "red",   "index": 1 }
-              }
-            }
-          ]
-        }
+          {
+            "matcher": { "id": "byName", "options": "High Latency p90" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "DB Pool Pressure" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "purple", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Lock Failures" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "dark-red", "mode": "fixed" } }]
+          }
+        ]
       },
       "options": {
-        "mergeValues": true,
-        "showValue": "never",
-        "alignValue": "center",
-        "rowHeight": 0.9,
-        "legend": { "displayMode": "list", "placement": "right" },
-        "tooltip": { "mode": "single" }
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
       }
     },
 

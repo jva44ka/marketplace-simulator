@@ -10,10 +10,18 @@ products:
   timeout: 30s
   circuit-breaker:
     enabled: true
-    max-requests: 3
+    half-open-requests: 3
     interval: 10s
     timeout: 5s
     threshold: 0.6
+    min-requests-to-trip: 10
+  retry:
+    enabled: true
+    max-attempts: 3
+    initial-backoff: 100ms
+    max-backoff: 1s
+    multiplier: 2.0
+    jitter-factor: 0.2
 
 database:
   user: cart
