@@ -43,7 +43,8 @@ jobs:
     job-interval: 1s
   product-events-outbox:
     enabled: true
-    job-interval: 10ms
+    idle-interval: 10ms
+    active-interval: 0s
     batch-size: 100
     max-retries: 5
   product-events-outbox-monitor:
