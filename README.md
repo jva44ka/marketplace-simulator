@@ -71,9 +71,11 @@ docker-compose up
 | Grafana    | Единый UI              | [http://localhost:3000](http://localhost:3000) (admin / admin) |
 
 В Grafana предустановлены дашборды:
-- **products** — gRPC-запросы, latency, ошибки БД, optimistic lock failures, outbox метрики
-- **cart** — HTTP-запросы, latency, ошибки БД, outbox метрики
-- **outbox-overview** — сводный дашборд по outbox обоих сервисов
+- **cart** — HTTP-запросы, latency, ошибки, DB-пул, outbox, бизнес-метрики (заказы, выручка, активные корзины)
+- **products** — gRPC-запросы, latency, ошибки, optimistic lock failures, DB-пул, outbox
+- **business** — воронка заказов, выручка, активные корзины, breakdown причин отказов чекаута
+- **outbox-overview** — сводный дашборд по outbox обоих сервисов (очередь, dead letter, throughput)
+- **postgres-overview** — состояние пулов соединений и latency запросов к БД обоих сервисов
 
 Datasource-связки:
 - Из трейса (Tempo) → переход в логи (Loki) по `traceId`
