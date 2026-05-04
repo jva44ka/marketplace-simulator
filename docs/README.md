@@ -10,6 +10,7 @@
 - [Быстрый старт](#быстрый-старт)
 - [Порты](#порты)
 - [Конфигурация](#конфигурация)
+- [Динамическая конфигурация (etcd)](#динамическая-конфигурация-etcd)
 - [Архитектура взаимодействия сервисов](#архитектура-взаимодействия-сервисов)
 - [Observability](#observability)
 - [Документация сервисов](#документация-сервисов)
@@ -27,6 +28,8 @@
 | **cart-migrations**     | migrator из [cart](https://github.com/jva44ka/marketplace-simulator-cart)                       | Накатывает миграции в cart-db при старте                            |
 | **kafka**               | confluentinc/cp-kafka:7.9.0                                                                     | Брокер сообщений (события об изменении товаров)                     |
 | **kafka-ui**            | provectuslabs/kafka-ui                                                                          | Веб-интерфейс для Kafka                                             |
+| **etcd**                | quay.io/coreos/etcd:v3.5.16                                                                     | Хранилище динамической конфигурации сервисов                        |
+| **etcd-ui**             | evildecay/etcdkeeper (custom build)                                                             | Веб-интерфейс для etcd                                              |
 | **prometheus**          | prom/prometheus                                                                                 | Сбор метрик с сервисов                                              |
 | **tempo**               | grafana/tempo:2.6.1                                                                             | Хранилище трейсов (OTLP)                                            |
 | **loki**                | grafana/loki:3.4.2                                                                              | Хранилище логов                                                     |
@@ -49,6 +52,8 @@ docker-compose up
 
 Все сервисы запустятся автоматически. Миграции применятся при первом старте — дожидаться отдельно не нужно.
 
+При первом запуске каждый сервис запишет свой YAML-конфиг в etcd (`/config/product`, `/config/cart`, `/config/loadgen`). После этого конфиг можно менять через etcd UI без рестарта сервисов.
+
 Первый запуск скачает образы (~2–3 минуты). Последующие старты — секунды.
 
 ### Остановка
@@ -57,7 +62,7 @@ docker-compose up
 # остановить, сохранив данные
 docker-compose down
 
-# остановить и удалить все данные (БД, метрики, трейсы)
+# остановить и удалить все данные (БД, метрики, трейсы, etcd)
 docker-compose down -v
 ```
 
@@ -68,6 +73,7 @@ docker-compose down -v
 | Grafana | [http://localhost:3000](http://localhost:3000) | Дашборды, метрики, трейсы, логи (admin / admin) |
 | Prometheus | [http://localhost:9090](http://localhost:9090) | Метрики, PromQL |
 | Kafka UI | [http://localhost:8090](http://localhost:8090) | Топики, консьюмеры, сообщения |
+| etcd UI | [http://localhost:8091](http://localhost:8091) | Просмотр и редактирование конфига сервисов |
 | Swagger — product | [http://localhost:5001/swagger/](http://localhost:5001/swagger/) | REST API сервиса товаров |
 | Swagger — cart | [http://localhost:5002/swagger/](http://localhost:5002/swagger/) | REST API сервиса корзины |
 
@@ -81,6 +87,8 @@ docker-compose down -v
 | cart-db     | 5434      | PostgreSQL                      |
 | kafka       | 9092      | Kafka broker                    |
 | kafka-ui    | 8090      | Kafka UI                        |
+| etcd        | 2379      | etcd client API                 |
+| etcd-ui     | 8091      | etcd UI (etcdkeeper)            |
 | prometheus  | 9090      | Prometheus UI                   |
 | tempo       | 4317      | OTLP gRPC receiver              |
 | loki        | 3100      | Loki HTTP API                   |
@@ -100,6 +108,49 @@ docker-compose down -v
 | `loki.yaml`        | Конфиг Loki                              |
 | `promtail.yaml`    | Конфиг Promtail (сбор логов)             |
 | `grafana/`         | Provisioning и дашборды Grafana          |
+
+## Динамическая конфигурация (etcd)
+
+При первом старте каждый сервис автоматически записывает свой YAML-конфиг в etcd. После этого конфиг можно менять в реальном времени — без рестарта сервисов.
+
+### Что меняется без рестарта
+
+| Сервис | Параметры |
+|--------|-----------|
+| **product** | rate-limiter (rps, burst, enabled), авторизация, логирование запросов/ответов, интервалы и настройки всех джоб |
+| **cart** | circuit breaker (порог, timeout, half-open), retry (attempts, backoff), timeout gRPC-клиента, настройки всех джоб |
+| **loadgen** | RPS воркеров order-flow и cart-viewer, порог и объём пополнения replenisher |
+
+### Как изменить конфиг
+
+**Через etcd UI** ([http://localhost:8091](http://localhost:8091)) — открыть ключ `/config/product`, `/config/cart` или `/config/loadgen`, отредактировать YAML, сохранить.
+
+**Через etcdctl:**
+
+```bash
+# Посмотреть текущий конфиг product
+docker exec etcd etcdctl get /config/product
+
+# Снизить rate limit до 10 RPS
+docker exec etcd etcdctl put /config/product "$(
+  docker exec etcd etcdctl get /config/product --print-value-only \
+  | sed 's/rps: 500/rps: 10/'
+)"
+
+# Ужесточить circuit breaker в cart
+docker exec etcd etcdctl put /config/cart "$(
+  docker exec etcd etcdctl get /config/cart --print-value-only \
+  | sed 's/threshold: 0.6/threshold: 0.3/'
+)"
+
+# Снизить нагрузку loadgen
+docker exec etcd etcdctl put /config/loadgen "$(
+  docker exec etcd etcdctl get /config/loadgen --print-value-only \
+  | sed 's/rps: 100/rps: 10/'
+)"
+```
+
+Изменение применяется в течение секунды — без рестарта контейнеров.
 
 ## Архитектура взаимодействия сервисов
 
@@ -172,7 +223,7 @@ cart outbox job   product :8002    product-db        kafka          loadgen
 
 **②** Cart в одной транзакции очищает корзину и создаёт outbox-записи. При ошибке транзакции сразу вызывает `ReleaseReservation`.
 
-**③** Cart outbox job асинхронно вызывает `ConfirmReservation` — product списывает товары со склада и удаляет резервирования. При неудаче — ретрай, после исчерпания попыток — dead letter.
+**③** Cart outbox job асинхронно вызывает `ConfirmReservation` — product списывает товары со склада и удаляет резервирования. Доставка **at-least-once**: оба метода (`ConfirmReservation`, `ReleaseReservation`) **идемпотентны** — повторный вызов с уже обработанными ID безопасен. При неудаче — ретрай, после исчерпания попыток — dead letter.
 
 **④** Product публикует событие об изменении товара в Kafka через собственный outbox.
 
