@@ -34,6 +34,12 @@ tracing:
   enabled: true
   otlp-endpoint: tempo:4317
 
+etcd:
+  endpoints:
+    - etcd:2379
+  dial-timeout: 5s
+  config-key: /config/cart
+
 jobs:
   reservation-confirmation-outbox:
     enabled: true

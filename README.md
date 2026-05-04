@@ -10,13 +10,14 @@ docker-compose up
 
 После запуска:
 
-| | |
-|-|-|
-| Grafana | [http://localhost:3000](http://localhost:3000) (admin / admin) |
-| Prometheus | [http://localhost:9090](http://localhost:9090) |
-| Kafka UI | [http://localhost:8090](http://localhost:8090) |
+|                   |                                                                  |
+|-------------------|------------------------------------------------------------------|
+| Grafana           | [http://localhost:3000](http://localhost:3000) (admin / admin)   |
+| Prometheus        | [http://localhost:9090](http://localhost:9090)                   |
+| Kafka UI          | [http://localhost:8090](http://localhost:8090)                   |
+| ETCD UI           | [http://localhost:8091](http://localhost:8091)                   |
 | Swagger — product | [http://localhost:5001/swagger/](http://localhost:5001/swagger/) |
-| Swagger — cart | [http://localhost:5002/swagger/](http://localhost:5002/swagger/) |
+| Swagger — cart    | [http://localhost:5002/swagger/](http://localhost:5002/swagger/) |
 
 ## Использованные паттерны для улучшения stability
 
