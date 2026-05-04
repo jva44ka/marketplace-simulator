@@ -1,0 +1,5 @@
+FROM evildecay/etcdkeeper:latest
+RUN find / -maxdepth 8 -type f \( -name "*.html" -o -name "*.js" \) 2>/dev/null \
+    | xargs grep -l "127.0.0.1:2379" 2>/dev/null \
+    | xargs sed -i 's/127.0.0.1:2379/etcd:2379/g' 2>/dev/null \
+    || true

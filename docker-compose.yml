@@ -21,9 +21,10 @@ services:
       start_period: 10s
 
   etcd-ui:
-    image: evildecay/etcdkeeper:latest
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.etcd-ui
     container_name: etcd-ui
-    command: ["-endpoint", "http://etcd:2379"]
     ports:
       - "8091:8080"
     depends_on:
@@ -163,6 +164,8 @@ services:
         condition: service_started
       cart:
         condition: service_started
+      etcd:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus:latest

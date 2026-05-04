@@ -19,6 +19,12 @@ sku-range:
   min: 1
   max: 200
 
+etcd:
+  endpoints:
+    - etcd:2379
+  dial-timeout: 5s
+  config-key: /config/loadgen
+
 workers:
   replenisher:
     enabled: true
