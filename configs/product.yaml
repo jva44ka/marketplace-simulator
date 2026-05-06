@@ -36,11 +36,13 @@ tracing:
   enabled: true
   otlp-endpoint: tempo:4317
 
-cache:
-  redis-addr: redis:6379
+redis:
+  enabled: true
+  address: redis:6379
   ttl: 5m
 
 etcd:
+  enabled: true
   endpoints:
     - etcd:2379
   dial-timeout: 5s
