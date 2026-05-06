@@ -12,7 +12,7 @@ products:
     enabled: true
     half-open-requests: 3
     interval: 10s
-    timeout: 5s
+    timeout: 1s
     threshold: 0.6
     min-requests-to-trip: 10
   retry:
@@ -35,6 +35,7 @@ tracing:
   otlp-endpoint: tempo:4317
 
 etcd:
+  enabled: true
   endpoints:
     - etcd:2379
   dial-timeout: 5s

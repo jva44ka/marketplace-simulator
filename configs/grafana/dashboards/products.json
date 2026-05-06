@@ -168,8 +168,8 @@
 
     {
       "id": 3,
-      "title": "Traffic: Service → DB",
-      "description": "Сравнение входящего RPS сервиса и RPS до базы данных.",
+      "title": "Traffic: Service → Cache → DB",
+      "description": "Сравнение входящего RPS сервиса, RPS до Redis и RPS до базы данных. Чем меньше DB RPS относительно Cache RPS — тем лучше работает кеш.",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -179,6 +179,12 @@
           "expr": "sum(rate(requests_total{service=\"product\"}[1m]))",
           "legendFormat": "Service RPS",
           "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum(rate(products_cache_operations_total{service=\"product\", operation=\"get\"}[1m]))",
+          "legendFormat": "Cache RPS",
+          "refId": "C"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -198,6 +204,12 @@
             "properties": [
               { "id": "custom.fillOpacity", "value": 10 },
               { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Cache RPS" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } }
             ]
           },
           {
@@ -485,6 +497,179 @@
             "legend": { "displayMode": "list", "placement": "bottom" }
           }
         }
+      ]
+    },
+
+    {
+      "id": 300,
+      "title": "Cache / Redis",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 52 },
+      "collapsed": true,
+      "panels": [
+
+        {
+          "id": 301,
+          "title": "Cache Hit Rate",
+          "description": "Доля GET-запросов к кешу, завершившихся хитом (без учёта stale). 100% = все чтения из Redis, 0% = Redis не помогает.",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 53 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "sum(rate(products_cache_operations_total{service=\"product\", operation=\"get\", result=\"hit\"}[5m])) / sum(rate(products_cache_operations_total{service=\"product\", operation=\"get\"}[5m])) * 100",
+              "legendFormat": "Hit Rate %",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "yellow", "value": 70 },
+                  { "color": "green", "value": 90 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+
+        {
+          "id": 302,
+          "title": "Stale Bypasses/s",
+          "description": "Количество stale-хитов в секунду — записей, которые Redis вернул, но они были отклонены из-за устаревшего xmin и пришлось идти в БД.",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 53 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "sum(rate(products_cache_operations_total{service=\"product\", operation=\"get\", result=\"stale\"}[1m]))",
+              "legendFormat": "stale/s",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "red", "value": 10 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+
+        {
+          "id": 303,
+          "title": "Cache Operations by Result",
+          "description": "RPS кеш-операций с разбивкой по operation (get/set/delete) и result (hit/miss/stale/error/success).",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 57 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "sum(rate(products_cache_operations_total{service=\"product\"}[1m])) by (operation, result)",
+              "legendFormat": "{{operation}} / {{result}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": { "lineWidth": 2, "fillOpacity": 10, "stacking": { "mode": "none" } }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "get / hit" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "get / miss" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "get / stale" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "get / error" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "set / error" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "dark-red", "mode": "fixed" } }]
+              }
+            ]
+          },
+          "options": {
+            "tooltip": { "mode": "multi", "sort": "desc" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        },
+
+        {
+          "id": 304,
+          "title": "Cache Operation Latency p90",
+          "description": "p90 время обращения к Redis по типу операции (get/set/delete). Нормальные значения — сотни мкс.",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 57 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "${datasource}" },
+              "expr": "histogram_quantile(0.90, sum(rate(products_cache_operation_duration_seconds_bucket{service=\"product\"}[1m])) by (le, operation))",
+              "legendFormat": "p90 {{operation}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": { "lineWidth": 2, "fillOpacity": 5 }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "p90 get" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "p90 set" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "p90 delete" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+              }
+            ]
+          },
+          "options": {
+            "tooltip": { "mode": "multi", "sort": "desc" },
+            "legend": { "displayMode": "list", "placement": "bottom" }
+          }
+        }
+
       ]
     }
 

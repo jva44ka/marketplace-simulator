@@ -6,7 +6,7 @@ groups:
   # ──────────────────────────────────────────────
   - orgId: 1
     name: Products API
-    folder: Ozon Simulator
+    folder: Marketplace Simulator
     interval: 1m
     rules:
 
@@ -143,7 +143,7 @@ groups:
   # ──────────────────────────────────────────────
   - orgId: 1
     name: Products DB
-    folder: Ozon Simulator
+    folder: Marketplace Simulator
     interval: 1m
     rules:
 
@@ -248,7 +248,7 @@ groups:
   # ──────────────────────────────────────────────
   - orgId: 1
     name: Cart API
-    folder: Ozon Simulator
+    folder: Marketplace Simulator
     interval: 1m
     rules:
 
@@ -385,7 +385,7 @@ groups:
   # ──────────────────────────────────────────────
   - orgId: 1
     name: Cart DB
-    folder: Ozon Simulator
+    folder: Marketplace Simulator
     interval: 1m
     rules:
 

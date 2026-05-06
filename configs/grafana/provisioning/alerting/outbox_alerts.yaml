@@ -6,7 +6,7 @@ groups:
   # ──────────────────────────────────────────────
   - orgId: 1
     name: Products Outbox
-    folder: Ozon Simulator
+    folder: Marketplace Simulator
     interval: 1m
     rules:
 
@@ -239,7 +239,7 @@ groups:
   # ──────────────────────────────────────────────
   - orgId: 1
     name: Cart Outbox
-    folder: Ozon Simulator
+    folder: Marketplace Simulator
     interval: 1m
     rules:
 
