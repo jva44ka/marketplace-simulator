@@ -19,7 +19,7 @@
 
 | Сервис                  | Репозиторий                                                                                     | Описание                                                            |
 |-------------------------|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| **product**             | [marketplace-simulator-product](https://github.com/jva44ka/marketplace-simulator-product)       | Управление товарами (gRPC + REST, PostgreSQL, Kafka outbox)         |
+| **product**             | [marketplace-simulator-product](https://github.com/jva44ka/marketplace-simulator-product)       | Управление товарами (gRPC + REST, PostgreSQL, Redis, Kafka outbox)  |
 | **cart**                | [marketplace-simulator-cart](https://github.com/jva44ka/marketplace-simulator-cart)             | Корзина покупок (REST, PostgreSQL, Outbox)                          |
 | **loadgen**             | [marketplace-simulator-loadgen](https://github.com/jva44ka/marketplace-simulator-loadgen)       | Генератор нагрузки (replenisher, order flow, cart viewer)           |
 | **product-db**          | postgres:17.7                                                                                   | БД сервиса товаров                                                  |
@@ -28,6 +28,7 @@
 | **cart-migrations**     | migrator из [cart](https://github.com/jva44ka/marketplace-simulator-cart)                       | Накатывает миграции в cart-db при старте                            |
 | **kafka**               | confluentinc/cp-kafka:7.9.0                                                                     | Брокер сообщений (события об изменении товаров)                     |
 | **kafka-ui**            | provectuslabs/kafka-ui                                                                          | Веб-интерфейс для Kafka                                             |
+| **redis**               | redis:7-alpine                                                                                  | Кеш чтений товаров для product-сервиса (Cache-Aside)                |
 | **etcd**                | quay.io/coreos/etcd:v3.5.16                                                                     | Хранилище динамической конфигурации сервисов                        |
 | **etcd-ui**             | evildecay/etcdkeeper (custom build)                                                             | Веб-интерфейс для etcd                                              |
 | **prometheus**          | prom/prometheus                                                                                 | Сбор метрик с сервисов                                              |
@@ -85,6 +86,7 @@ docker-compose down -v
 | cart        | 5002      | HTTP REST                       |
 | product-db  | 5433      | PostgreSQL                      |
 | cart-db     | 5434      | PostgreSQL                      |
+| redis       | 6379      | Redis (кеш product)             |
 | kafka       | 9092      | Kafka broker                    |
 | kafka-ui    | 8090      | Kafka UI                        |
 | etcd        | 2379      | etcd client API                 |
@@ -157,19 +159,22 @@ docker exec etcd etcdctl put /config/loadgen "$(
 ### Добавление товара в корзину
 
 ```
-  Client             cart :5002        product :8002      product-db
-    │                     │                  │                 │
-    │ POST /cart/{sku}    │                  │                 │
-    ├────────────────────►│                  │                 │
-    │                     │ GetProduct(sku)  │                 │
-    │                     ├─────────────────►│                 │
-    │                     │                  │ SELECT products │
-    │                     │                  ├────────────────►│
-    │                     │                  │◄────────────────┤
-    │                     │◄─────────────────┤                 │
-    │◄────────────────────┤                  │                 │
-    │        200 OK       │                  │                 │
+  Client             cart :5002        product :8002       redis        product-db
+    │                     │                  │               │               │
+    │ POST /cart/{sku}    │                  │               │               │
+    ├────────────────────►│                  │               │               │
+    │                     │ GetProduct(sku)  │               │               │
+    │                     ├─────────────────►│               │               │
+    │                     │                  │  GET product  │               │
+    │                     │                  ├──────────────►│               │
+    │                     │                  │  (cache hit)  │               │
+    │                     │                  │◄──────────────┤               │
+    │                     │◄─────────────────┤               │               │
+    │◄────────────────────┤                  │               │               │
+    │        200 OK       │                  │               │               │
 ```
+
+При cache miss product обращается к БД и асинхронно прогревает кеш. При недоступном Redis — только БД.
 
 Сервис cart обращается к product за данными о товаре (цена, название). Резервирование при добавлении в корзину **не происходит** — только при чекауте.
 
@@ -250,7 +255,7 @@ Datasource-связки внутри Grafana:
 | Дашборд | Ссылка | Что смотреть |
 |---------|--------|-------------|
 | Cart Service | [→](http://localhost:3000/d/marketplace-cart) | HTTP RPS, latency, ошибки, DB-пул, outbox, бизнес-метрики |
-| Products Service | [→](http://localhost:3000/d/marketplace-products) | gRPC RPS, latency, optimistic lock failures, outbox |
+| Products Service | [→](http://localhost:3000/d/marketplace-products) | gRPC RPS, latency, optimistic lock failures, outbox, Cache/Redis hit rate & latency |
 | Business Metrics | [→](http://localhost:3000/d/marketplace-business) | Воронка заказов, выручка, активные корзины |
 | Outbox Overview | [→](http://localhost:3000/d/marketplace-outbox-overview) | Очередь и dead letter обоих сервисов |
 | Postgres Overview | [→](http://localhost:3000/d/marketplace-postgres-overview) | Пулы соединений, latency запросов к БД |
