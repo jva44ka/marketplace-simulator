@@ -36,6 +36,10 @@ tracing:
   enabled: true
   otlp-endpoint: tempo:4317
 
+cache:
+  redis-addr: redis:6379
+  ttl: 5m
+
 etcd:
   endpoints:
     - etcd:2379
@@ -56,3 +60,9 @@ jobs:
   product-events-outbox-monitor:
     enabled: true
     job-interval: 10s
+  cache-update-outbox:
+    enabled: true
+    idle-interval: 100ms
+    active-interval: 0s
+    batch-size: 100
+    max-retries: 5
