@@ -400,7 +400,7 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "outbox_records_pending{service=\"product\"}",
+              "expr": "sum(outbox_records_pending{service=\"product\"})",
               "legendFormat": "",
               "refId": "A"
             }
@@ -434,7 +434,7 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "outbox_records_dead_letter{service=\"product\"}",
+              "expr": "sum(outbox_records_dead_letter{service=\"product\"})",
               "legendFormat": "",
               "refId": "A"
             }
@@ -467,8 +467,8 @@
           "targets": [
             {
               "datasource": { "type": "prometheus", "uid": "${datasource}" },
-              "expr": "sum(rate(outbox_records_processed_total{service=\"product\"}[1m])) by (status)",
-              "legendFormat": "{{status}}",
+              "expr": "sum(rate(outbox_records_processed_total{service=\"product\"}[1m])) by (job, status)",
+              "legendFormat": "{{job}} {{status}}",
               "refId": "A"
             }
           ],
@@ -479,15 +479,15 @@
             },
             "overrides": [
               {
-                "matcher": { "id": "byName", "options": "success" },
+                "matcher": { "id": "byRegexp", "options": ".*success$" },
                 "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
               },
               {
-                "matcher": { "id": "byName", "options": "failed" },
+                "matcher": { "id": "byRegexp", "options": ".*failed$" },
                 "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
               },
               {
-                "matcher": { "id": "byName", "options": "dead_letter" },
+                "matcher": { "id": "byRegexp", "options": ".*dead_letter$" },
                 "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
               }
             ]

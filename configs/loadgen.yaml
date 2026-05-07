@@ -34,8 +34,8 @@ workers:
 
   order-flow:
     enabled: true
-    parallelism: 200
-    rps: 100
+    parallelism: 100
+    rps: 50
 
   cart-viewer:
     enabled: true

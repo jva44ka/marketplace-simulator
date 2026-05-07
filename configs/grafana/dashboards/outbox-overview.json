@@ -55,7 +55,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service=\"$service\"}",
+          "expr": "sum(outbox_records_pending{service=\"$service\"})",
           "legendFormat": "",
           "refId": "A"
         }
@@ -89,7 +89,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service=\"$service\"}",
+          "expr": "sum(outbox_records_dead_letter{service=\"$service\"})",
           "legendFormat": "",
           "refId": "A"
         }
@@ -122,14 +122,14 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_pending{service=\"$service\"}",
-          "legendFormat": "pending",
+          "expr": "sum(outbox_records_pending{service=\"$service\"}) by (outbox)",
+          "legendFormat": "{{outbox}} pending",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "outbox_records_dead_letter{service=\"$service\"}",
-          "legendFormat": "dead letters",
+          "expr": "sum(outbox_records_dead_letter{service=\"$service\"}) by (outbox)",
+          "legendFormat": "{{outbox}} dead letters",
           "refId": "B"
         }
       ],
@@ -204,8 +204,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(outbox_records_processed_total{service=\"$service\"}[1m])) by (status)",
-          "legendFormat": "{{status}}",
+          "expr": "sum(rate(outbox_records_processed_total{service=\"$service\"}[1m])) by (status, job)",
+          "legendFormat": "{{job}} {{status}}",
           "refId": "A"
         }
       ],
@@ -216,15 +216,15 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "success" },
+            "matcher": { "id": "byRegexp", "options": ".*success$" },
             "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
           },
           {
-            "matcher": { "id": "byName", "options": "failed" },
+            "matcher": { "id": "byRegexp", "options": ".*failed$" },
             "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
           },
           {
-            "matcher": { "id": "byName", "options": "dead_letter" },
+            "matcher": { "id": "byRegexp", "options": ".*dead_letter$" },
             "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
           }
         ]
@@ -252,20 +252,20 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le))",
-          "legendFormat": "p50",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le))",
-          "legendFormat": "p95",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le))",
-          "legendFormat": "p99",
+          "expr": "histogram_quantile(0.99, sum(rate(outbox_record_age_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p99",
           "refId": "C"
         }
       ],
@@ -286,14 +286,14 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le))",
-          "legendFormat": "p50",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le))",
-          "legendFormat": "p95",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p95",
           "refId": "B"
         }
       ],
@@ -342,28 +342,28 @@
     },
     {
       "id": 24,
-      "title": "Confirmation Duration — p50 / p95 / p99",
-      "description": "Только для service=cart. Для product данных нет.",
+      "title": "Tick Duration — p50 / p95 / p99",
+      "description": "Время выполнения одного тика outbox job. Для service=cart показывает ReservationConfirmation job.",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.50, sum(rate(cart_outbox_confirmation_duration_seconds_bucket[1m])) by (le))",
-          "legendFormat": "p50",
+          "expr": "histogram_quantile(0.50, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.95, sum(rate(cart_outbox_confirmation_duration_seconds_bucket[1m])) by (le))",
-          "legendFormat": "p95",
+          "expr": "histogram_quantile(0.95, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p95",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "histogram_quantile(0.99, sum(rate(cart_outbox_confirmation_duration_seconds_bucket[1m])) by (le))",
-          "legendFormat": "p99",
+          "expr": "histogram_quantile(0.99, sum(rate(outbox_tick_duration_seconds_bucket{service=\"$service\"}[1m])) by (le, job))",
+          "legendFormat": "{{job}} p99",
           "refId": "C"
         }
       ],
