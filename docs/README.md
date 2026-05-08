@@ -156,6 +156,82 @@ docker exec etcd etcdctl put /config/loadgen "$(
 
 ## Архитектура взаимодействия сервисов
 
+### Обзор сервисов
+
+```mermaid
+graph TB
+    subgraph LOAD["Нагрузка"]
+        loadgen["loadgen\nreplenisher · order-flow · cart-viewer"]
+    end
+
+    subgraph SVC["Микросервисы"]
+        cart["cart\nREST :5002"]
+        product["product\ngRPC :8002 · REST :5001"]
+    end
+
+    subgraph DB["Базы данных"]
+        cart_db[("cart-db\nPostgreSQL :5434")]
+        product_db[("product-db\nPostgreSQL :5433")]
+    end
+
+    subgraph INFRA["Инфраструктура"]
+        redis[("Redis :6379")]
+        kafka["Kafka :9092"]
+        etcd["etcd :2379"]
+    end
+
+    subgraph MIG["Миграции"]
+        cart_mig["cart-migrations"]
+        product_mig["product-migrations"]
+    end
+
+    subgraph UI["Web UI"]
+        kafka_ui["kafka-ui :8090"]
+        etcd_ui["etcd-ui :8091"]
+    end
+
+    subgraph OBS["Observability"]
+        prometheus["Prometheus :9090"]
+        tempo["Tempo :4317"]
+        loki["Loki :3100"]
+        promtail["Promtail"]
+        grafana["Grafana :3000"]
+    end
+
+    %% Нагрузка → сервисы
+    loadgen -->|"HTTP POST /cart, /checkout"| cart
+    loadgen -->|"gRPC IncreaseCount"| product
+    loadgen -->|"consume product.events"| kafka
+
+    %% Бизнес-потоки
+    cart -->|"pgx"| cart_db
+    cart -->|"gRPC: GetProduct · Reserve\nRelease · Confirm"| product
+    cart <-->|"hot-reload config"| etcd
+
+    product -->|"pgx"| product_db
+    product -->|"Cache-Aside"| redis
+    product -->|"produce product.events"| kafka
+    product <-->|"hot-reload config"| etcd
+
+    %% Миграции
+    cart_mig -->|"goose up"| cart_db
+    product_mig -->|"goose up"| product_db
+
+    %% Web UI
+    kafka_ui --- kafka
+    etcd_ui --- etcd
+
+    %% Observability
+    prometheus -->|"scrape /metrics"| cart
+    prometheus -->|"scrape /metrics"| product
+    cart -->|"OTLP traces"| tempo
+    product -->|"OTLP traces"| tempo
+    promtail -->|"docker.sock → push logs"| loki
+    grafana --> prometheus
+    grafana --> tempo
+    grafana --> loki
+```
+
 ### Добавление товара в корзину
 
 ```
