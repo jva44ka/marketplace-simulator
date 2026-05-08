@@ -19,7 +19,7 @@ docker-compose up
 | Swagger — product | [http://localhost:5001/swagger/](http://localhost:5001/swagger/) |
 | Swagger — cart    | [http://localhost:5002/swagger/](http://localhost:5002/swagger/) |
 
-## Использованные паттерны для улучшения stability
+## Архитектурные паттерны
 
 **Transactional Outbox** — cart атомарно очищает корзину и записывает задачи подтверждения резервирований в одной транзакции. Product так же атомарно обновляет остатки и пишет события в Kafka. Никаких потерь сообщений при падении сервиса.
 
