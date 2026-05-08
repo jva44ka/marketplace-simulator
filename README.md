@@ -2,6 +2,37 @@
 
 Учебный проект «Симулятор маркетплейса» — два микросервиса на Go с генератором нагрузки и полным observability-стеком.
 
+## О проекте
+
+Система состоит из двух микросервисов (**cart** и **product**), генератора нагрузки (**loadgen**) и инфраструктуры: PostgreSQL, Redis, Kafka, etcd, Prometheus, Grafana, Tempo, Loki.
+
+### Основные флоу
+
+**Добавление товара в корзину**
+
+Клиент отправляет `POST /user/{id}/cart/{sku}` на cart. Cart обращается к product по gRPC (`GetProduct`) — получает цену и название товара. Product отдаёт данные из Redis (Cache-Aside); при промахе идёт в PostgreSQL. Cart сохраняет позицию в своей БД и возвращает ответ.
+
+**Оформление заказа (checkout)**
+
+Клиент отправляет `POST /user/{id}/cart/checkout` на cart. Cart получает позиции корзины из БД, вызывает `ReserveProduct` на product (product создаёт записи резервирований — остатки пока не меняются). Затем в одной транзакции cart очищает корзину и записывает задачи подтверждения в outbox-таблицу. Фоновая job асинхронно вызывает `ConfirmReservation` на product — product списывает товары со склада, удаляет резервирования и публикует события в Kafka. Loadgen-replenisher читает эти события и пополняет склад, когда остаток падает ниже порога.
+
+## Технологии
+
+| Область | Инструменты |
+|---------|------------|
+| **Транспорт** | HTTP (`net/http`) — cart; gRPC + grpc-gateway (REST-обёртка) — product; Protobuf — сериализация gRPC |
+| **База данных** | PostgreSQL (pgx/v5, pgxpool); миграции — goose |
+| **Кеширование** | Redis 7 — Cache-Aside в product; декоратор `CachedProductRepository`; graceful degradation при недоступности |
+| **Брокер сообщений** | Apache Kafka — product публикует события `product.events`; loadgen читает и пополняет склад |
+| **Трейсинг** | OpenTelemetry SDK → OTLP gRPC → Grafana Tempo; инструментированы HTTP, gRPC, PostgreSQL (pgx tracer), Redis |
+| **Логирование** | `log/slog` (stdlib); Promtail собирает логи Docker-контейнеров → Loki; просмотр в Grafana с drill-down из трейсов |
+| **Метрики** | Prometheus; дашборды в Grafana: Cart, Products, Business Metrics, Outbox Overview, Postgres Overview |
+| **Динамическая конфигурация** | etcd — hot-reload без рестарта сервисов; первый старт сидирует конфиг из YAML |
+
+---
+
+## Быстрый старт
+
 ```bash
 git clone https://github.com/jva44ka/marketplace-simulator.git
 cd marketplace-simulator
