@@ -1,18 +1,18 @@
 # marketplace-simulator
 
-[🇷🇺 Русский](README.md) · 🇬🇧 English
+[Русский](README.md) · en English
 
-An educational "Marketplace Simulator" project — two Go microservices with a load generator and a full observability stack.
+Pet project "Marketplace Simulator" — two Go microservices with a load generator and a full observability stack.
 
 ## About
 
 The system consists of two microservices and one load generator:
-1. **[cart](https://github.com/jva44ka/marketplace-simulator-cart)** — master system for user shopping carts. Endpoints for:
+1. **[cart](https://github.com/jva44ka/marketplace-simulator-cart)** — http-service, master system for user shopping carts. Endpoints for:
    1. Adding / removing items from the cart
    2. Clearing the cart
    3. Viewing the current cart contents
    4. Checking out an order
-2. **[product](https://github.com/jva44ka/marketplace-simulator-product)** — master system for products / inventory. Endpoints for increasing / decreasing stock counts and querying product data.
+2. **[product](https://github.com/jva44ka/marketplace-simulator-product)** — grpc-service, master system for products / inventory. Endpoints for increasing / decreasing stock counts and querying product data.
 3. **[loadgen](https://github.com/jva44ka/marketplace-simulator-loadgen)** — load generator for cart and product.
 
 Supporting infrastructure:
@@ -20,7 +20,7 @@ Supporting infrastructure:
 2. **Redis** for caching in the product service
 3. **Kafka** for async product events
 4. **etcd** for live configuration changes without restarts (e.g. adjusting the rate limiter in product)
-5. **Grafana** for dashboards, logs, and traces
+5. **Grafana** for dashboards, alerts, logs, and traces
 6. **Prometheus, Tempo, Loki** for metrics storage, distributed traces, and logs
 
 ### Main flows
@@ -32,21 +32,6 @@ The client sends `POST /user/{id}/cart/{sku}` to cart. Cart calls product via gR
 **Checkout**
 
 The client sends `POST /user/{id}/cart/checkout` to cart. Cart fetches the cart items from the database, then calls `ReserveProduct` on product (product creates reservation records — stock counts are not changed yet). Cart then atomically clears the cart and writes confirmation tasks to an outbox table in a single transaction. A background job asynchronously calls `ConfirmReservation` on product — product deducts stock, deletes the reservations, and publishes events to Kafka. The loadgen replenisher reads these events and restocks inventory when the count drops below a threshold.
-
-## Technologies
-
-| Area | Tools |
-|------|-------|
-| **Transport** | HTTP (`net/http`) — cart; gRPC + grpc-gateway (REST wrapper) — product; Protobuf — gRPC serialisation |
-| **Database** | PostgreSQL (pgx/v5, pgxpool); migrations — goose |
-| **Caching** | Redis 7 — Cache-Aside in product; `CachedProductRepository` decorator; graceful degradation when Redis is unavailable |
-| **Message broker** | Apache Kafka — product publishes `product.events`; loadgen replenisher consumes and restocks |
-| **Tracing** | OpenTelemetry SDK → OTLP gRPC → Grafana Tempo; instrumented: HTTP, gRPC, PostgreSQL (pgx tracer), Redis |
-| **Logging** | `log/slog` (stdlib); Promtail collects Docker container logs → Loki; viewed in Grafana with drill-down from traces |
-| **Metrics** | Prometheus; Grafana dashboards: Cart, Products, Business Metrics, Outbox Overview, Postgres Overview |
-| **Dynamic config** | etcd — hot-reload without service restarts; on first start each service seeds its config from YAML |
-
----
 
 ## Quick start
 

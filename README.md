@@ -1,18 +1,18 @@
 # marketplace-simulator
 
-🇷🇺 Русский · [🇬🇧 English](README.en.md)
+Русский · [English](README.en.md)
 
-Учебный проект «Симулятор маркетплейса» — два микросервиса на Go с генератором нагрузки и полным observability-стеком.
+Петпроект «Симулятор маркетплейса» — два микросервиса на Go с генератором нагрузки и полным observability-стеком.
 
 ## О проекте
 
 Система состоит из двух микросервисов на Go + один сервис-генератор нагрузки на первые два:
-1. **[cart](https://github.com/jva44ka/marketplace-simulator-cart)** - мастер система "корзин с товарами" пользователей. Есть ручки для 
+1. **[cart](https://github.com/jva44ka/marketplace-simulator-cart)** - http-сервис, мастер система "корзин с товарами" пользователей. Есть ручки для 
    1. добавления/удаления товара в корзину
    2. Очистки корзины
    3. Просмотр текущего составка корзины
    4. Оформления заказа
-2. **[product](https://github.com/jva44ka/marketplace-simulator-product)** - мастер система по "продуктам/товарам". Есть ручки для уменьшения/увеличения количества продукта, а также просмотр данных о продукте.
+2. **[product](https://github.com/jva44ka/marketplace-simulator-product)** - grpc-сервис, мастер система по "продуктам/товарам". Есть ручки для уменьшения/увеличения количества продукта, а также просмотр данных о продукте.
 3. **[loadgen](https://github.com/jva44ka/marketplace-simulator-loadgen)** - генератор нагрузки на cart/product.
 
 Остальной стек:
@@ -20,7 +20,7 @@
 2. **Redis** для кеширования в сервисе продкутов
 3. **Kafka** для асинхронных событий по продуктам
 4. **ETCD** для изменения конфигов сервисов в реальном времени, например настройка рейт-лимита в сервисе products
-5. **Grafana** для отображения дашбордов, логов, трейсов
+5. **Grafana** для отображения дашбордов, алертов, логов, трейсов
 6. **Prometheus, Tempo, Loki** - для хранения логов и трейсов.
 
 ### Основные флоу
@@ -32,21 +32,6 @@
 **Оформление заказа (checkout)**
 
 Клиент отправляет `POST /user/{id}/cart/checkout` на cart. Cart получает позиции корзины из БД, вызывает `ReserveProduct` на product (product создаёт записи резервирований — остатки пока не меняются). Затем в одной транзакции cart очищает корзину и записывает задачи подтверждения в outbox-таблицу. Фоновая job асинхронно вызывает `ConfirmReservation` на product — product списывает товары со склада, удаляет резервирования и публикует события в Kafka. Loadgen-replenisher читает эти события и пополняет склад, когда остаток падает ниже порога.
-
-## Технологии
-
-| Область | Инструменты |
-|---------|------------|
-| **Транспорт** | HTTP (`net/http`) — cart; gRPC + grpc-gateway (REST-обёртка) — product; Protobuf — сериализация gRPC |
-| **База данных** | PostgreSQL (pgx/v5, pgxpool); миграции — goose |
-| **Кеширование** | Redis 7 — Cache-Aside в product; декоратор `CachedProductRepository`; graceful degradation при недоступности |
-| **Брокер сообщений** | Apache Kafka — product публикует события `product.events`; loadgen читает и пополняет склад |
-| **Трейсинг** | OpenTelemetry SDK → OTLP gRPC → Grafana Tempo; инструментированы HTTP, gRPC, PostgreSQL (pgx tracer), Redis |
-| **Логирование** | `log/slog` (stdlib); Promtail собирает логи Docker-контейнеров → Loki; просмотр в Grafana с drill-down из трейсов |
-| **Метрики** | Prometheus; дашборды в Grafana: Cart, Products, Business Metrics, Outbox Overview, Postgres Overview |
-| **Динамическая конфигурация** | etcd — hot-reload без рестарта сервисов; первый старт сидирует конфиг из YAML |
-
----
 
 ## Быстрый старт
 
