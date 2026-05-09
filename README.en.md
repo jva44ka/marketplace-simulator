@@ -28,10 +28,12 @@ Supporting infrastructure:
 **Add item to cart**
 
 The client sends `POST /user/{id}/cart/{sku}` to cart. Cart calls product via gRPC (`GetProduct`) to fetch price and name. Product serves data from Redis (Cache-Aside); on a cache miss it reads from PostgreSQL. Cart saves the item to its own database and returns a response.
+<img width="944" height="364" alt="image" src="https://github.com/user-attachments/assets/6b027bd0-640d-4f21-9eab-bcda9e89b959" />
 
 **Checkout**
 
 The client sends `POST /user/{id}/cart/checkout` to cart. Cart fetches the cart items from the database, then calls `ReserveProduct` on product (product creates reservation records — stock counts are not changed yet). Cart then atomically clears the cart and writes confirmation tasks to an outbox table in a single transaction. A background job asynchronously calls `ConfirmReservation` on product — product deducts stock, deletes the reservations, and publishes events to Kafka. The loadgen replenisher reads these events and restocks inventory when the count drops below a threshold.
+<img width="1564" height="857" alt="image" src="https://github.com/user-attachments/assets/6e5c83db-60e7-4ee3-8ef0-697e1363172f" />
 
 ## Quick start
 
