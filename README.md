@@ -28,10 +28,12 @@
 **Добавление товара в корзину**
 
 Клиент отправляет `POST /user/{id}/cart/{sku}` на cart. Cart обращается к product по gRPC (`GetProduct`) — получает цену и название товара. Product отдаёт данные из Redis (Cache-Aside); при промахе идёт в PostgreSQL. Cart сохраняет позицию в своей БД и возвращает ответ.
+<img width="944" height="364" alt="image" src="https://github.com/user-attachments/assets/6b027bd0-640d-4f21-9eab-bcda9e89b959" />
 
 **Оформление заказа (checkout)**
 
 Клиент отправляет `POST /user/{id}/cart/checkout` на cart. Cart получает позиции корзины из БД, вызывает `ReserveProduct` на product (product создаёт записи резервирований — остатки пока не меняются). Затем в одной транзакции cart очищает корзину и записывает задачи подтверждения в outbox-таблицу. Фоновая job асинхронно вызывает `ConfirmReservation` на product — product списывает товары со склада, удаляет резервирования и публикует события в Kafka. Loadgen-replenisher читает эти события и пополняет склад, когда остаток падает ниже порога.
+<img width="1564" height="857" alt="image" src="https://github.com/user-attachments/assets/6e5c83db-60e7-4ee3-8ef0-697e1363172f" />
 
 ## Быстрый старт
 
